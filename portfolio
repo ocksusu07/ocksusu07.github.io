@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+	<title>안뇽 ㅋ</title>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<link rel="stylesheet" href="style.css">
+</head>
+<body>
+	<header>
+		<h1>ocksusu</h1>
+		<nav>
+			<ul>
+				<li><a href="#">홈</a></li>
+				<li><a href="#">소개</a></li>
+				<li><a href="#">포트폴리오</a></li>
+				<li><a href="#">이메일</a></li>
+			</ul>
+		</nav>
+	</header>
+	<main>
+		<section id="about">
+			<h2>소개</h2>
+			<p>Hi im ocksusu </p>
+		</section>
+		<section id="portfolio">
+			<h2>포트폴리오</h2>
+			<ul>
+				<li>
+					<img src="https://th.bing.com/th/id/OIP.De2m-OWRY7puIMCSPng9KQHaFj?w=204&h=180&c=7&r=0&o=5&dpr=1.3&pid=1.7" alt="프로젝트 1">
+					<h3>옥수수</h3>
+					<p>집가고싶어요.</p>
+				</li>
+				<li>
+					<img src="https://th.bing.com/th/id/OIP.1GUzwUoaQBL1B8qVHGf_7QHaEK?w=273&h=180&c=7&r=0&o=5&dpr=1.3&pid=1.7" alt="프로젝트 2">
+					<h3>옥수수</h3>
+					<p>배고파요.</p>
+				</li>
+				<li>
+					<img src="https://th.bing.com/th/id/OIP.NE1LF01TYoI3A8SQ_vOXlgHaEK?w=326&h=183&c=7&r=0&o=5&dpr=1.3&pid=1.7" alt="프로젝트 3">
+					<h3>옥수수</h3>
+					<p>공부해야되는걸 알지만 안할래요.</p>
+				</li>
+			</ul>
+		</section>
+	</main>
+	<footer>
+		<p>&copy; 2023 ocksusu. All rights reserved.</p>
+	</footer>
+</body>
+</html>
