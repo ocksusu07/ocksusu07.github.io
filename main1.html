@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>결과</title>
+    <link rel="stylesheet" href="choice2.css">
+</head>
+<body>
+    <h1>선택 결과</h1>
+    <div id="animationContainer"></div>
+    <button id="backButton" onclick="goBack()" style="display: none;">다시 돌아가기</button>
+    
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const options = JSON.parse(localStorage.getItem('options'));
+
+            if (!options || options.length === 0) {
+                document.getElementById('animationContainer').innerText = '선택지가 없습니다.';
+                return;
+            }
+
+            const animationContainer = document.getElementById('animationContainer');
+            let displayIndex = 0;
+            let randomIndex = Math.floor(Math.random() * options.length);
+
+            const interval = setInterval(() => {
+                animationContainer.innerText = options[displayIndex];
+                displayIndex = (displayIndex + 1) % options.length;
+            }, 100);
+
+            setTimeout(() => {
+                clearInterval(interval);
+                const result = options[randomIndex];
+                
+                //결과 표시
+                animationContainer.innerText = `${result}`;
+                
+                document.getElementById('backButton').style.display = 'block';
+            }, 3000);
+        });
+
+        function goBack() {
+            window.history.back();
+        }
+    </script>
+</body>
+</html>

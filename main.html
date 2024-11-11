@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>랜덤 선택기</title>
+    <link rel="stylesheet" href="choice1.css">
+</head>
+<body>
+    
+    <div class="🤚">
+        <div class="👉"></div>
+        <div class="👉"></div>
+        <div class="👉"></div>
+        <div class="👉"></div>
+        <div class="🌴"></div>		
+        <div class="👍"></div>
+    </div>
+    <br>
+    <br>
+    <br>
+     
+
+    <div class="input-container" id="inputContainer">
+        <input type="text" class="input" placeholder="옵션 입력 1">
+        <input type="text" class="input" placeholder="옵션 입력 2">
+        <input type="text" class="input" placeholder="옵션 입력 3">
+    </div>
+    <br>
+    <button onclick="addOption()">옵션 추가</button>
+    <br>
+    <button onclick="goToResult()">선택하기</button>
+
+    <script>
+        function addOption() {
+            const container = document.getElementById('inputContainer');
+            const inputCount = container.getElementsByTagName('input').length;
+            const newInput = document.createElement('input');
+            newInput.type = 'text';
+            newInput.placeholder = `옵션 입력 ${inputCount + 1}`;
+            newInput.className = 'input';
+            container.appendChild(newInput);
+}
+
+        function goToResult() {
+            const container = document.getElementById('inputContainer');
+            const inputs = container.getElementsByTagName('input');
+            const options = [];
+            
+            for (let input of inputs) {
+                const value = input.value.trim();
+                if (value) {
+                    options.push(value);
+                }
+            }
+
+            if (options.length === 0) {
+                alert('옵션을 입력하세용!');
+                return;
+            }
+
+            localStorage.setItem('options', JSON.stringify(options));
+            window.location.href = 'main1.html';
+        }
+    </script>
+</body>
+</html>
