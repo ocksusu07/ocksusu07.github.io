@@ -1004,6 +1004,13 @@
             background: rgba(255, 255, 255, 0.3);
         }
 
+        button.active {
+            background: #27ae60 !important;
+            color: white !important;
+            border: 2px solid #2ecc71 !important;
+            box-shadow: 0 0 10px rgba(39, 174, 96, 0.5) !important;
+        }
+
         button:disabled {
             background: rgba(255, 255, 255, 0.1);
             color: rgba(255, 255, 255, 0.5);
@@ -1471,7 +1478,8 @@
             nextDayCost: 20, // 다음날로 넘어가는 비용
             slotCost: 10, // 슬롯 구매 비용
             activeEvents: [], // 활성 이벤트 목록
-            news: [], // 일일 뉴스 목록
+            news: [], // 오늘 활성화된 뉴스 목록 (어제 발생한 뉴스)
+            upcomingNews: [], // 오늘 발생한 뉴스 (내일 활성화될 예정)
             newsHistory: [], // 과거 뉴스 이력
             lastAutoProgress: Date.now(), // 자동 진행 시간 추적
             autoProgressEnabled: true, // 자동 진행 활성화 여부 (항상 활성화)
@@ -1485,7 +1493,9 @@
                 autoNutrition: 0,  // 자동 영양 레벨
                 premiumSoil: 0,    // 고급 토양 레벨
                 xpGloves: 0        // 숙련자의 장갑 레벨
-            }
+            },
+            shopSortCriteria: 'level', // 기본 정렬: 해금 레벨순
+            shopSortOrder: 'asc'       // 기본 정렬: 오름차순
         };
         let autoProgressPausedAt = null;
 
@@ -1638,16 +1648,16 @@
 
         // 날씨 시스템
         const weathers = [
-            { emoji: '☀️', name: '맑음', effect: 'normal', class: 'weather-sunny', probability: 25 },
-            { emoji: '🌧️', name: '비', effect: 'growth_boost', class: 'weather-rainy', probability: 20 },
-            { emoji: '🌙', name: '달빛', effect: 'moonlight_bonus', class: 'weather-night', probability: 15 },
-            { emoji: '🌩️', name: '번개', effect: 'electric_charge', class: 'weather-storm', probability: 10 },
+            { emoji: '☀️', name: '맑음', effect: 'normal', class: 'weather-sunny', probability: 35 },
+            { emoji: '🌧️', name: '비', effect: 'growth_boost', class: 'weather-rainy', probability: 25 },
+            { emoji: '🌙', name: '달빛', effect: 'moonlight_bonus', class: 'weather-night', probability: 10 },
+            { emoji: '🌩️', name: '번개', effect: 'electric_charge', class: 'weather-storm', probability: 5 },
             { emoji: '🌫️', name: '안개', effect: 'unstable_price', class: 'weather-foggy', probability: 5 },
-            { emoji: '🌪️', name: '강풍', effect: 'wind_damage', class: 'weather-storm', probability: 5 },
-            { emoji: '❄️', name: '서리', effect: 'frost_delay', class: 'weather-snowy', probability: 5 },
+            { emoji: '🌪️', name: '강풍', effect: 'wind_damage', class: 'weather-storm', probability: 4 },
+            { emoji: '❄️', name: '서리', effect: 'frost_delay', class: 'weather-snowy', probability: 4 },
             { emoji: '🔥', name: '열기', effect: 'heat_growth', class: 'weather-hot', probability: 5 },
-            { emoji: '🌈', name: '무지개', effect: 'rainbow_rare', class: 'weather-rainbow', probability: 5 },
-            { emoji: '🌘', name: '암운', effect: 'dark_cloud', class: 'weather-night', probability: 5 }
+            { emoji: '🌈', name: '무지개', effect: 'rainbow_rare', class: 'weather-rainbow', probability: 3 },
+            { emoji: '🌘', name: '암운', effect: 'dark_cloud', class: 'weather-night', probability: 4 }
         ];
 
         // 가격 변동 시스템
@@ -1662,7 +1672,7 @@
                 name: '🌿 허브 축제',
                 description: '허브류 식물들의 수요가 급증했습니다!',
                 affectedPlants: ['herb_sprout', 'starglow_herb'],
-                priceMultiplier: 3.0,
+                priceMultiplier: 1.3,
                 duration: 1,
                 probability: 0.05
             },
@@ -1671,7 +1681,7 @@
                 name: '💎 수정 열풍',
                 description: '수정 장미의 아름다움이 화제가 되었습니다!',
                 affectedPlants: ['crystal_rose'],
-                priceMultiplier: 4.0,
+                priceMultiplier: 1.5,
                 duration: 1,
                 probability: 0.03
             },
@@ -1680,7 +1690,7 @@
                 name: '🔥 불사조 열풍',
                 description: '불사조 식물의 희귀성이 주목받고 있습니다!',
                 affectedPlants: ['phoenix_plant'],
-                priceMultiplier: 5.0,
+                priceMultiplier: 1.8,
                 duration: 1,
                 probability: 0.02
             },
@@ -1689,7 +1699,7 @@
                 name: '🐉 용의 힘 열풍',
                 description: '용과일의 강력한 효과가 화제가 되었습니다!',
                 affectedPlants: ['dragon_fruit'],
-                priceMultiplier: 4.5,
+                priceMultiplier: 2.0,
                 duration: 1,
                 probability: 0.02
             },
@@ -1698,7 +1708,7 @@
                 name: '🌳 황금 나무 열풍',
                 description: '황금 나무의 가치가 급등했습니다!',
                 affectedPlants: ['golden_tree'],
-                priceMultiplier: 6.0,
+                priceMultiplier: 2.2,
                 duration: 1,
                 probability: 0.01
             },
@@ -1707,7 +1717,7 @@
                 name: '🌸 영원의 꽃 열풍',
                 description: '영원의 꽃의 신비로움이 전 세계에 알려졌습니다!',
                 affectedPlants: ['eternal_bloom'],
-                priceMultiplier: 8.0,
+                priceMultiplier: 2.5,
                 duration: 1,
                 probability: 0.005
             },
@@ -1716,7 +1726,7 @@
                 name: '🌙 달빛 식물 열풍',
                 description: '달빛을 받는 식물들이 특별한 가치를 인정받고 있습니다!',
                 affectedPlants: ['moonflower', 'crystal_rose'],
-                priceMultiplier: 2.5,
+                priceMultiplier: 1.5,
                 duration: 1,
                 probability: 0.04
             },
@@ -1725,7 +1735,7 @@
                 name: '🌟 희귀 식물 열풍',
                 description: '모든 희귀 식물들의 가치가 상승했습니다!',
                 affectedPlants: ['crystal_rose', 'phoenix_plant', 'dragon_fruit', 'golden_tree', 'eternal_bloom'],
-                priceMultiplier: 2.0,
+                priceMultiplier: 1.4,
                 duration: 1,
                 probability: 0.03
             }
@@ -1800,6 +1810,11 @@
             renderPlantSlots();
             startGameLoop();
             startAutoSave(); // 자동 저장 시작
+            
+            // 뉴스 생성 (새로 시작하거나 뉴스가 없는 경우)
+            if (gameState.upcomingNews.length === 0 && gameState.news.length === 0) {
+                generateDailyNews();
+            }
             
             // 알림 권한 요청
             requestNotificationPermission();
@@ -1880,6 +1895,13 @@
                             });
                         }
 
+                        // 마이그레이션: 구버전 뉴스 이력 대응
+                        if (gameState.newsHistory) {
+                            gameState.newsHistory.forEach(item => {
+                                if (!item.effectiveDay) item.effectiveDay = item.day;
+                            });
+                        }
+
                         // 저장된 가격 데이터 로드
                         if (savedState.dailyPrices) {
                             dailyPrices = savedState.dailyPrices;
@@ -1930,16 +1952,16 @@
         // 날씨 효과 설명 가져오기
         function getWeatherEffectDescription(weatherEmoji) {
             const weatherEffects = {
-                '☀️': '좋은 품질 확률 증가 (+10%)',
-                '🌧️': '성장 속도 50% 증가, 좋은 품질 확률 증가 (+15%)',
-                '🌙': '판매가 2배 효과 (20% 확률), 좋은 품질 확률 증가 (+20%)',
-                '🌩️': '판매가 3배 효과 (15% 확률), 좋은 품질 확률 증가 (+25%)',
-                '🌫️': '수확가 불안정 (50~150%), 품질 확률 감소 (-10%)',
-                '🌪️': '작물 손실 위험 (25% 확률), 품질 확률 감소 (-15%)',
-                '❄️': '성장 정지, 보존 기간 1일 증가, 품질 확률 감소 (-5%)',
-                '🔥': '성장 속도 2배, 시들 위험, 좋은 품질 확률 증가 (+15%)',
-                '🌈': '희귀성 부여 (판매가+40%, 성장+20%), 좋은 품질 확률 증가 (+30%)',
-                '🌘': '복합 효과, 좋은 품질 확률 증가 (+5%)'
+                '☀️': '좋은 품질 확률 증가 (+5%)',
+                '🌧️': '성장 속도 50% 증가, 좋은 품질 확률 증가 (+8%)',
+                '🌙': '판매가 1.5배 효과 (10% 확률), 좋은 품질 확률 증가 (+10%)',
+                '🌩️': '판매가 2배 효과 (10% 확률), 좋은 품질 확률 증가 (+12%)',
+                '🌫️': '수확가 불안정 (50~150%), 품질 확률 감소 (-5%)',
+                '🌪️': '작물 손실 위험 (15% 확률), 품질 확률 감소 (-10%)',
+                '❄️': '성장 정지, 품질 확률 감소 (-3%)',
+                '🔥': '성장 속도 2배, 시들 위험, 좋은 품질 확률 증가 (+8%)',
+                '🌈': '희귀성 부여 (판매가+30%), 좋은 품질 확률 증가 (+15%)',
+                '🌘': '복합 효과, 좋은 품질 확률 증가 (+2%)'
             };
             return weatherEffects[weatherEmoji] || '효과 없음';
         }
@@ -2018,8 +2040,6 @@
                     return 1.5;
                 case '🔥': // 열기: 성장 속도 2배
                     return 2.0;
-                case '🌈': // 무지개: 성장 속도 20% 증가
-                    return 1.2;
                 default:
                     return 1.0;
             }
@@ -2326,17 +2346,15 @@
             
             // 기본 보너스 (성장 속도, 판매가)
             gameState.bonuses.growthSpeed += 0.05; // 5% 가속
-            gameState.bonuses.sellPrice += 0.03;   // 3% 판매가 상승
+            gameState.bonuses.sellPrice += 0.01;   // 1% 판매가 상승 (기존 3%에서 하향)
             
-            showNotification(`🎊 축하합니다! 레벨 ${gameState.level}이(가) 되었습니다!${bonusText}\n• 영구 성장 속도 보너스: +5%\n• 영구 판매가 보너스: +3%`);
+            showNotification(`🎊 축하합니다! 레벨 ${gameState.level}이(가) 되었습니다!${bonusText}\n• 영구 성장 속도 보너스: +5%\n• 영구 판매가 보너스: +1%`);
         }
 
         // 품질 등급 정보
         const qualityGrades = {
-            'SSS': { label: 'SSS', emoji: '👑', multiplier: 6.0, color: '#ff3e3e' },
-            'SS': { label: 'SS', emoji: '💎', multiplier: 4.5, color: '#ff7e3e' },
-            'S': { label: 'S', emoji: '✨', multiplier: 3.2, color: '#ffbe3e' },
-            'A': { label: 'A', emoji: '⭐', multiplier: 2.4, color: '#ffff3e' },
+            'S': { label: 'S', emoji: '✨', multiplier: 3.5, color: '#ffbe3e' },
+            'A': { label: 'A', emoji: '⭐', multiplier: 2.5, color: '#ffff3e' },
             'B': { label: 'B', emoji: '🌟', multiplier: 1.8, color: '#beff3e' },
             'C': { label: 'C', emoji: '🌿', multiplier: 1.4, color: '#7eff3e' },
             'D': { label: 'D', emoji: '🌱', multiplier: 1.0, color: '#3eff3e' },
@@ -2358,17 +2376,16 @@
             const weatherModifier = weatherBonus[gameState.weather] || 0;
             const luckModifier = gameState.bonuses.qualityLuck || 0;
             const upgradeModifier = (gameState.upgrades.premiumSoil || 0) * 0.05; // 토양 업그레이드
-            const randomModifier = Math.random() * 0.3; // 기본 랜덤성
+            const randomModifier = Math.random() * 0.2; // 랜덤성 축소 (0.3 -> 0.2)
             
             const totalScore = careScore + weatherModifier + luckModifier + upgradeModifier + randomModifier;
             
             let quality = 'D';
-            if (totalScore >= 1.55) quality = 'SSS';
-            else if (totalScore >= 1.4) quality = 'SS';
-            else if (totalScore >= 1.2) quality = 'S';
-            else if (totalScore >= 1.0) quality = 'A';
-            else if (totalScore >= 0.8) quality = 'B';
-            else if (totalScore >= 0.6) quality = 'C';
+            // 등급 획득 난이도 대폭 상향 (S등급 획득을 매우 어렵게)
+            if (totalScore >= 1.25) quality = 'S';
+            else if (totalScore >= 1.1) quality = 'A';
+            else if (totalScore >= 0.9) quality = 'B';
+            else if (totalScore >= 0.7) quality = 'C';
             else if (totalScore >= 0.4) quality = 'D';
             else quality = 'F';
             
@@ -2376,8 +2393,8 @@
             let specialEffect = '';
             const currentWeather = gameState.weather;
             switch (currentWeather) {
-                case '🌙': if (Math.random() < 0.2) specialEffect = ' (달빛 효과: 판매가 2배)'; break;
-                case '🌩️': if (Math.random() < 0.15) specialEffect = ' (번개 충전: 판매가 3배)'; break;
+                case '🌙': if (Math.random() < 0.1) specialEffect = ' (달빛 효과: 판매가 1.5배)'; break;
+                case '🌩️': if (Math.random() < 0.1) specialEffect = ' (번개 충전: 판매가 2배)'; break;
                 case '🌈': specialEffect = ' (무지개 효과: 희귀성 부여)'; break;
             }
             
@@ -2517,7 +2534,13 @@
                     return `<span style="color: ${grade.color}; font-weight: bold;">${grade.emoji} ${grade.label}</span>`;
                 };
 
-                Object.entries(harvestedByKey).forEach(([key, items]) => {
+                const qualityOrder = ['S', 'A', 'B', 'C', 'D', 'F'];
+
+                Object.entries(harvestedByKey).sort((a, b) => {
+                    const qA = a[0].split('__')[1];
+                    const qB = b[0].split('__')[1];
+                    return qualityOrder.indexOf(qA) - qualityOrder.indexOf(qB);
+                }).forEach(([key, items]) => {
                     const first = items[0];
                     const plantId = first.plantId;
                     const quality = first.quality || 'D'; // 'normal'에서 'D'로 변경
@@ -2527,7 +2550,7 @@
 
                     const count = items.length;
                     const currentSellPrice = getCurrentSellPrice(plant);
-                    const qualityPrice = getQualityPrice(currentSellPrice, quality, effect);
+                    const qualityPrice = getQualityPrice(plant, currentSellPrice, quality, effect);
                     const eventPrice = getEventPrice(qualityPrice, plantId);
                     const buyPrice = (plant.priceRange[0] + plant.priceRange[1]) / 2; // 평균 구매가
 
@@ -2667,15 +2690,81 @@
                 <button class="back-button" onclick="showShop()">← 뒤로 가기</button>
                 <h2>🌸 씨앗 상점</h2>
                 <p>오늘의 씨앗 가격입니다. 가격은 매일 변동됩니다.</p>
+                
+                <div style="margin-bottom: 15px; display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
+                    <span>정렬 기준:</span>
+                    <button onclick="changeShopSort('level')" class="${gameState.shopSortCriteria === 'level' ? 'active' : ''}" style="padding: 5px 10px; font-size: 12px;">기본(레벨)순</button>
+                    <button onclick="changeShopSort('sensitivity')" class="${gameState.shopSortCriteria === 'sensitivity' ? 'active' : ''}" style="padding: 5px 10px; font-size: 12px;">예민순</button>
+                    <button onclick="changeShopSort('buyPrice')" class="${gameState.shopSortCriteria === 'buyPrice' ? 'active' : ''}" style="padding: 5px 10px; font-size: 12px;">구매가순</button>
+                    <button onclick="changeShopSort('sellPrice')" class="${gameState.shopSortCriteria === 'sellPrice' ? 'active' : ''}" style="padding: 5px 10px; font-size: 12px;">판매가순</button>
+                    <button onclick="changeShopSort('stock')" class="${gameState.shopSortCriteria === 'stock' ? 'active' : ''}" style="padding: 5px 10px; font-size: 12px;">재고순</button>
+                </div>
+
                 <div id="shop-items"></div>
             `;
             
             renderSeedShop();
         }
 
+        // 상점 정렬 변경
+        function changeShopSort(criteria) {
+            if (gameState.shopSortCriteria === criteria) {
+                // 이미 해당 기준이면 정렬 순서 반전
+                gameState.shopSortOrder = gameState.shopSortOrder === 'asc' ? 'desc' : 'asc';
+            } else {
+                gameState.shopSortCriteria = criteria;
+                gameState.shopSortOrder = 'asc'; // 새로운 기준이면 오름차순 우선
+            }
+            
+            showSeedShop(); // 헤더 버튼 상태 업데이트를 위해 전체 다시 그리기
+            saveGameState();
+        }
+
         // 씨앗 상점 렌더링
         function renderSeedShop() {
             const shopItems = document.getElementById('shop-items');
+            
+            // 식물 목록 복사 및 정렬
+            let sortedPlants = [...plants];
+            
+            const rarityRank = { 'common': 1, 'uncommon': 2, 'rare': 3, 'epic': 4, 'legendary': 5, 'mythic': 6 };
+            
+            sortedPlants.sort((a, b) => {
+                let valA, valB;
+                
+                switch (gameState.shopSortCriteria) {
+                    case 'level':
+                        valA = a.unlockLevel;
+                        valB = b.unlockLevel;
+                        break;
+                    case 'sensitivity':
+                        valA = rarityRank[a.rarity];
+                        valB = rarityRank[b.rarity];
+                        break;
+                    case 'buyPrice':
+                        valA = getCurrentBuyPrice(a);
+                        valB = getCurrentBuyPrice(b);
+                        break;
+                    case 'sellPrice':
+                        valA = getCurrentSellPrice(a);
+                        valB = getCurrentSellPrice(b);
+                        break;
+                    case 'stock':
+                        valA = getCurrentStock(a);
+                        valB = getCurrentStock(b);
+                        break;
+                    default:
+                        valA = a.unlockLevel;
+                        valB = b.unlockLevel;
+                }
+                
+                if (gameState.shopSortOrder === 'asc') {
+                    return valA - valB;
+                } else {
+                    return valB - valA;
+                }
+            });
+
             let html = `
                 <table>
                     <tr>
@@ -2691,7 +2780,7 @@
                     </tr>
             `;
             
-            plants.forEach(plant => {
+            sortedPlants.forEach(plant => {
                 const currentBuyPrice = getCurrentBuyPrice(plant);
                 const currentSellPrice = getCurrentSellPrice(plant);
                 const currentStock = getCurrentStock(plant);
@@ -2789,35 +2878,32 @@
 
         // 일일 뉴스 생성
         function generateDailyNews() {
-            const todayNews = [];
+            const upcomingNews = [];
             const availablePlants = plants.filter(p => gameState.level >= p.unlockLevel);
             
-            // 하루에 1~2개의 뉴스 발생
-            const newsCount = Math.random() < 0.3 ? 2 : 1;
+            // 하루에 1개의 뉴스 발생 (내일 적용될 예고 뉴스)
+            const template = newsTemplates[Math.floor(Math.random() * newsTemplates.length)];
+            const plant = availablePlants[Math.floor(Math.random() * availablePlants.length)];
             
-            for (let i = 0; i < newsCount; i++) {
-                const template = newsTemplates[Math.floor(Math.random() * newsTemplates.length)];
-                const plant = availablePlants[Math.floor(Math.random() * availablePlants.length)];
-                
-                if (plant) {
-                    const newsItem = {
-                        id: `${template.id}_${Date.now()}_${i}`,
-                        title: template.title.replace(/{plant}/g, `${plant.emoji} ${plant.name}`),
-                        content: template.content.replace(/{plant}/g, `${plant.emoji} ${plant.name}`),
-                        effect: template.effect,
-                        targetPlantId: plant.id,
-                        day: gameState.day
-                    };
-                    todayNews.push(newsItem);
-                }
+            if (plant) {
+                const newsItem = {
+                    id: `${template.id}_${Date.now()}_0`,
+                    title: template.title.replace(/{plant}/g, `${plant.emoji} ${plant.name}`),
+                    content: template.content.replace(/{plant}/g, `${plant.emoji} ${plant.name}`),
+                    effect: template.effect,
+                    targetPlantId: plant.id,
+                    day: gameState.day,
+                    effectiveDay: gameState.day + 1 // 내일부터 적용
+                };
+                upcomingNews.push(newsItem);
             }
             
-            gameState.news = todayNews;
-            gameState.newsHistory.unshift(...todayNews);
+            gameState.upcomingNews = upcomingNews;
+            gameState.newsHistory.unshift(...upcomingNews);
             if (gameState.newsHistory.length > 20) gameState.newsHistory.length = 20;
             
-            if (todayNews.length > 0) {
-                showNewsPopup(todayNews);
+            if (upcomingNews.length > 0) {
+                showNewsPopup(upcomingNews);
             }
         }
 
@@ -2834,12 +2920,15 @@
                 <div style="background: #f4f1ea; color: #1a1a1a; padding: 30px; border: 5px double #333; margin: 10px; max-width: 500px; box-shadow: 0 0 20px rgba(0,0,0,0.5);">
                     <div style="text-align: center; border-bottom: 2px solid #333; margin-bottom: 15px; padding-bottom: 10px;">
                         <h2 style="margin: 0; font-size: 24px; text-transform: uppercase;">THE DAILY GREENHOUSE</h2>
-                        <small>Day ${item.day} | Special Edition</small>
+                        <small>Day ${item.day} | Tomorrow's Forecast</small>
+                    </div>
+                    <div style="background: #c0392b; color: white; padding: 5px; text-align: center; font-weight: bold; margin-bottom: 15px;">
+                        ⚠️ 내일(Day ${item.effectiveDay}) 적용 예정 소식
                     </div>
                     <h3 style="color: #c0392b; margin-bottom: 10px;">${item.title}</h3>
                     <p style="line-height: 1.6; font-size: 16px;">${item.content}</p>
                     <div style="margin-top: 20px; font-style: italic; font-size: 14px; border-top: 1px solid #ccc; padding-top: 10px;">
-                        * 시장 전문가들은 이로 인해 해당 품목의 가격이 크게 요동칠 것으로 전망하고 있습니다.
+                        * 본 소식은 내일 시장이 열릴 때부터 가격과 재고에 반영됩니다.
                     </div>
                 </div>
             `).join('');
@@ -3227,7 +3316,10 @@
                         growthSpeed: 1.0,
                         sellPrice: 1.0,
                         qualityLuck: 0
-                    }
+                    },
+                    news: [],
+                    upcomingNews: [],
+                    newsHistory: []
                 };
                 
                 // 가격/재고 데이터 초기화
@@ -3592,7 +3684,7 @@
                 if (totalOwned > 0) {
                     ownedText = `${totalOwned}개 (`;
                     Object.entries(plantDetail).sort((a,b) => {
-                        const grades = ['SSS', 'SS', 'S', 'A', 'B', 'C', 'D', 'F'];
+                        const grades = ['S', 'A', 'B', 'C', 'D', 'F'];
                         return grades.indexOf(a[0]) - grades.indexOf(b[0]);
                     }).forEach(([q, count]) => {
                         const grade = qualityGrades[q] || qualityGrades['D'];
@@ -3624,23 +3716,39 @@
         }
 
         // 품질별 가격 계산 (특별 효과 포함)
-        function getQualityPrice(basePrice, quality, specialEffect = '') {
+        function getQualityPrice(plant, basePrice, quality, specialEffect = '') {
             let finalPrice = basePrice;
             
-            // 품질별 가격 설정 (F~SSS)
+            // 품질별 기본 배율 (F~S)
             const grade = qualityGrades[quality] || qualityGrades['D'];
-            finalPrice = Math.floor(basePrice * grade.multiplier);
+            const baseMultiplier = grade.multiplier;
+
+            // 희귀도별 배율 가중치 (희귀할수록 품질 차이가 큼)
+            const rarityWeight = {
+                'common': 0.05,    // 일반: 품질 차이 극도로 적음 (S 기준 약 1.12배)
+                'uncommon': 0.15,  // 우수: 매우 적은 차이
+                'rare': 0.35,      // 희귀: 눈에 띄는 차이
+                'epic': 0.6,       // 에픽: 큰 가격 차이
+                'legendary': 0.8,  // 전설: 매우 큰 차이
+                'mythic': 1.0      // 신화: 배율 그대로 적용 (S 3.5배)
+            };
+            
+            const weight = rarityWeight[plant.rarity] || 0.15;
+            // 감쇄된 배율 계산: 1 + (기본배율 - 1) * 가중치
+            const effectiveMultiplier = 1 + (baseMultiplier - 1) * weight;
+            
+            finalPrice = Math.floor(basePrice * effectiveMultiplier);
             
             // 레벨업 보너스 적용
             finalPrice = Math.floor(finalPrice * (gameState.bonuses.sellPrice || 1.0));
             
             // 특별 효과 적용
             if (specialEffect.includes('달빛 효과')) {
-                finalPrice = Math.floor(finalPrice * 2); // 2배
+                finalPrice = Math.floor(finalPrice * 1.5); // 1.5배
             } else if (specialEffect.includes('번개 충전')) {
-                finalPrice = Math.floor(finalPrice * 3); // 3배
+                finalPrice = Math.floor(finalPrice * 2); // 2배
             } else if (specialEffect.includes('무지개 효과')) {
-                finalPrice = Math.floor(finalPrice * 1.4); // 40% 보너스
+                finalPrice = Math.floor(finalPrice * 1.3); // 30% 보너스
             }
             
             return finalPrice;
@@ -3684,7 +3792,7 @@
                 );
             } else {
                 // 품질 순서 정의 (높은 순서대로)
-                const qualityOrder = ['SSS', 'SS', 'S', 'A', 'B', 'C', 'D', 'F'];
+                const qualityOrder = ['S', 'A', 'B', 'C', 'D', 'F'];
                 
                 // 가장 높은 품질의 식물 찾기
                 for (const q of qualityOrder) {
@@ -3698,7 +3806,7 @@
                 return;
             }
             
-            const qualityPrice = getQualityPrice(currentSellPrice, plantToSell.quality, plantToSell.specialEffect || '');
+            const qualityPrice = getQualityPrice(plant, currentSellPrice, plantToSell.quality, plantToSell.specialEffect || '');
             const eventPrice = getEventPrice(qualityPrice, plantId);
             
             // 해당 식물 제거
@@ -3725,13 +3833,7 @@
             showNotification(`💰 ${plant.emoji} ${plant.name} (${grade.emoji} ${grade.label} 등급)을(를) 판매했습니다! +${eventPrice} 골드${eventText}`);
             
             updateDisplay();
-            // 현재 열려있는 메뉴에 따라 화면 갱신
-            const contentArea = document.getElementById('content-area');
-            if (contentArea.innerHTML.includes('판매 정보')) {
-                showMarketPrices();
-            } else if (contentArea.innerHTML.includes('보유한 식물')) {
-                showInventory();
-            }
+            refreshAllScreens();
             
             saveGameState();
         }
@@ -3803,7 +3905,7 @@
                     break;
                     
                 case 'wind_damage': // 강풍
-                    if (Math.random() < 0.25) {
+                    if (Math.random() < 0.15) {
                         effectMessage = '🌪️ 강풍으로 일부 작물이 시들거나 날아갈 수 있습니다!';
                     } else {
                         effectMessage = '🌪️ 강풍으로 판매가가 10% 증가합니다!';
@@ -3811,8 +3913,8 @@
                     break;
                     
                 case 'frost_delay': // 서리
-                    if (Math.random() < 0.3) {
-                        effectMessage = '❄️ 서리로 성장이 정지되고 보존 기간이 1일 증가합니다!';
+                    if (Math.random() < 0.2) {
+                        effectMessage = '❄️ 서리로 성장이 정지됩니다!';
                     }
                     break;
                     
@@ -3821,7 +3923,7 @@
                     break;
                     
                 case 'rainbow_rare': // 무지개
-                    effectMessage = '🌈 무지개 효과로 희귀성이 부여됩니다 (판매가+40%, 성장+20%)!';
+                    effectMessage = '🌈 무지개 효과로 희귀성이 부여됩니다 (판매가+30%)!';
                     break;
                     
                 case 'dark_cloud': // 암운
@@ -3883,11 +3985,14 @@
             // 이벤트 업데이트
             updateEvents();
             
+            // 뉴스 시스템 업데이트: 예고되었던 뉴스를 활성화
+            gameState.news = [...(gameState.upcomingNews || [])];
+            
             // 새로운 이벤트 체크
             const newEvents = checkAndCreateEvents();
             gameState.activeEvents.push(...newEvents);
             
-            // 일일 뉴스 생성
+            // 내일 적용될 일일 뉴스 생성
             generateDailyNews();
             
             // 확률 기반 날씨 선택
@@ -4016,11 +4121,18 @@
             
             let html = '';
             gameState.newsHistory.forEach(item => {
+                const isUpcoming = item.effectiveDay > gameState.day;
+                const isActive = item.effectiveDay === gameState.day;
+                const statusTag = isUpcoming ? 
+                    '<span style="background: #f39c12; color: white; padding: 2px 6px; border-radius: 4px; font-size: 10px; margin-left: 10px;">내일 적용 예정</span>' : 
+                    (isActive ? '<span style="background: #27ae60; color: white; padding: 2px 6px; border-radius: 4px; font-size: 10px; margin-left: 10px;">현재 적용 중</span>' : '');
+
                 html += `
-                    <div style="background: rgba(255,255,255,0.1); padding: 15px; border-radius: 10px; margin-bottom: 10px; border-left: 4px solid #c0392b;">
-                        <small>Day ${item.day}</small>
+                    <div style="background: rgba(255,255,255,0.1); padding: 15px; border-radius: 10px; margin-bottom: 10px; border-left: 4px solid ${isActive ? '#27ae60' : '#c0392b'};">
+                        <small>발행: Day ${item.day} ${statusTag}</small>
                         <h3 style="margin: 5px 0; color: #FFD700;">${item.title}</h3>
                         <p style="font-size: 14px; color: #eee;">${item.content}</p>
+                        <small style="color: #bbb;">적용일: Day ${item.effectiveDay}</small>
                     </div>
                 `;
             });
