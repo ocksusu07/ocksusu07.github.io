@@ -1397,11 +1397,19 @@
             <div class="menu-card-title">다음날까지</div>
             <div class="menu-card-description" id="timer-display">--:--</div>
         </div>
-        
-        <div class="menu-card" onclick="checkNotificationPermission()">
-            <span class="menu-card-icon">🔔</span>
-            <div class="menu-card-title">알림 상태 확인</div>
-            <div class="menu-card-description">브라우저 알림 설정을 확인하세요</div>
+
+        <!-- 암시장 버튼 (활성화 시에만 표시) -->
+        <div class="menu-card" id="black-market-card" onclick="showBlackMarket()" style="display: none; background: linear-gradient(135deg, #2c3e50 0%, #000000 100%); border: 1px solid #e74c3c;">
+            <span class="menu-card-icon">👺</span>
+            <div class="menu-card-title" style="color: #e74c3c;">비밀 암시장</div>
+            <div class="menu-card-description">특별한 아이템을 만나보세요</div>
+        </div>
+
+        <!-- 퀘스트 버튼 (활성화 시에만 표시) -->
+        <div class="menu-card" id="quest-card" onclick="showQuestMenu()" style="display: none; background: linear-gradient(135deg, #f1c40f 0%, #e67e22 100%); border: 1px solid #fff;">
+            <span class="menu-card-icon">✉️</span>
+            <div class="menu-card-title" style="color: #fff;">단골 손님의 요청</div>
+            <div class="menu-card-description" id="quest-timer">남은 시간: --:--</div>
         </div>
     </div>
 
@@ -1435,9 +1443,30 @@
 
 
 
-    <!-- 데이터 초기화 버튼 (구석에 작게 배치) -->
-    <div style="position: fixed; bottom: 20px; right: 20px; z-index: 1000;">
-        <button onclick="clearGameData()" style="
+    <!-- 플로팅 하단 컨트롤 (초기화 및 알림 설정) -->
+    <div style="position: fixed; bottom: 20px; right: 20px; z-index: 1000; display: flex; gap: 10px;">
+        <!-- 알림 설정 버튼 (아이콘 형태로 구석 배치) -->
+        <button onclick="checkNotificationPermission()" title="알림 상태 확인" style="
+            background: linear-gradient(135deg, #f1c40f, #f39c12);
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            font-size: 18px;
+            cursor: pointer;
+            opacity: 0.7;
+            transition: all 0.3s ease;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        " onmouseover="this.style.opacity='1'; this.style.transform='scale(1.1)'" onmouseout="this.style.opacity='0.7'; this.style.transform='scale(1)'">
+            🔔
+        </button>
+
+        <!-- 데이터 초기화 버튼 -->
+        <button onclick="clearGameData()" title="데이터 초기화" style="
             background: linear-gradient(135deg, #e74c3c, #c0392b);
             color: white;
             border: none;
@@ -1495,7 +1524,14 @@
                 xpGloves: 0        // 숙련자의 장갑 레벨
             },
             shopSortCriteria: 'level', // 기본 정렬: 해금 레벨순
-            shopSortOrder: 'asc'       // 기본 정렬: 오름차순
+            shopSortOrder: 'asc',       // 기본 정렬: 오름차순
+            blackMarket: {
+                active: false,
+                items: [],
+                lastUpdateDay: 0
+            },
+            quests: [], // 활성 퀘스트 목록
+            weatherLock: null // 날씨 고정 정보 { weather: '🌈', endDay: 5 }
         };
 
         // 마법 식물 데이터
@@ -1505,19 +1541,21 @@
                 emoji: '🌱',
                 name: 'Herb Sprout',
                 growTime: 10, // 10초
+                requiredDays: 0,
                 priceRange: [10, 15],
                 sellRange: [12, 18],
                 description: '기본 허브 새싹',
                 rarity: 'common',
                 unlockLevel: 0,
-                baseStock: 8, // 기본 재고
-                maxStock: 12 // 최대 재고
+                baseStock: 8,
+                maxStock: 12
             },
             {
                 id: 'starglow_herb',
                 emoji: '🌟',
                 name: 'Starglow Herb',
                 growTime: 30, // 30초
+                requiredDays: 0,
                 priceRange: [25, 35],
                 sellRange: [30, 42],
                 description: '별빛이 깃든 허브',
@@ -1531,6 +1569,7 @@
                 emoji: '🌙',
                 name: 'Moonflower',
                 growTime: 60, // 1분
+                requiredDays: 0,
                 priceRange: [50, 70],
                 sellRange: [60, 84],
                 description: '달빛을 흡수하는 꽃',
@@ -1544,6 +1583,7 @@
                 emoji: '💎',
                 name: 'Crystal Rose',
                 growTime: 120, // 2분
+                requiredDays: 1,
                 priceRange: [100, 130],
                 sellRange: [120, 156],
                 description: '수정처럼 빛나는 장미',
@@ -1557,6 +1597,7 @@
                 emoji: '🔥',
                 name: 'Phoenix Plant',
                 growTime: 300, // 5분
+                requiredDays: 2,
                 priceRange: [200, 250],
                 sellRange: [240, 300],
                 description: '불사조의 불꽃을 담은 식물',
@@ -1566,10 +1607,25 @@
                 maxStock: 5
             },
             {
+                id: 'sun_flare_herb',
+                emoji: '☀️',
+                name: 'Sun Flare Herb',
+                growTime: 600, // 10분
+                requiredDays: 3,
+                priceRange: [450, 600],
+                sellRange: [540, 720],
+                description: '태양의 열기를 머금은 매운 허브',
+                rarity: 'rare',
+                unlockLevel: 15,
+                baseStock: 4,
+                maxStock: 7
+            },
+            {
                 id: 'dragon_fruit',
                 emoji: '🐉',
                 name: 'Dragon Fruit',
-                growTime: 600, // 10분
+                growTime: 900, // 15분
+                requiredDays: 4,
                 priceRange: [400, 500],
                 sellRange: [480, 600],
                 description: '용의 힘을 담은 과일',
@@ -1579,10 +1635,25 @@
                 maxStock: 6
             },
             {
+                id: 'deep_sea_coral',
+                emoji: '🌊',
+                name: 'Deep Sea Coral',
+                growTime: 1200, // 20분
+                requiredDays: 5,
+                priceRange: [600, 800],
+                sellRange: [720, 960],
+                description: '심해의 차가운 기운을 담은 산호초',
+                rarity: 'epic',
+                unlockLevel: 25,
+                baseStock: 2,
+                maxStock: 5
+            },
+            {
                 id: 'golden_tree',
                 emoji: '🌳',
                 name: 'Golden Tree',
                 growTime: 1800, // 30분
+                requiredDays: 6,
                 priceRange: [800, 1000],
                 sellRange: [960, 1200],
                 description: '황금빛 열매를 맺는 나무',
@@ -1596,6 +1667,7 @@
                 emoji: '🌸',
                 name: 'Eternal Bloom',
                 growTime: 3600, // 1시간
+                requiredDays: 7,
                 priceRange: [1500, 2000],
                 sellRange: [1800, 2400],
                 description: '영원히 피어있는 신비한 꽃',
@@ -1605,36 +1677,11 @@
                 maxStock: 4
             },
             {
-                id: 'deep_sea_coral',
-                emoji: '🌊',
-                name: 'Deep Sea Coral',
-                growTime: 1200, // 20분
-                priceRange: [600, 800],
-                sellRange: [720, 960],
-                description: '심해의 차가운 기운을 담은 산호초',
-                rarity: 'epic',
-                unlockLevel: 25,
-                baseStock: 2,
-                maxStock: 5
-            },
-            {
-                id: 'sun_flare_herb',
-                emoji: '☀️',
-                name: 'Sun Flare Herb',
-                growTime: 900, // 15분
-                priceRange: [450, 600],
-                sellRange: [540, 720],
-                description: '태양의 열기를 머금은 매운 허브',
-                rarity: 'rare',
-                unlockLevel: 15,
-                baseStock: 4,
-                maxStock: 7
-            },
-            {
                 id: 'void_spore',
                 emoji: '🌑',
                 name: 'Void Spore',
-                growTime: 5400, // 1시간 30분
+                growTime: 5400, // 1.5시간
+                requiredDays: 7,
                 priceRange: [2500, 3500],
                 sellRange: [3000, 4200],
                 description: '공허의 틈새에서 자라나는 기묘한 포자',
@@ -2023,6 +2070,27 @@
             document.getElementById('weather-name').textContent = gameState.weatherName;
             document.getElementById('next-day-cost').textContent = gameState.nextDayCost;
             
+            // 암시장 버튼 표시 제어
+            const bmCard = document.getElementById('black-market-card');
+            if (bmCard) {
+                if (gameState.blackMarket && gameState.blackMarket.active && gameState.blackMarket.items.length > 0) {
+                    bmCard.style.display = 'block';
+                } else {
+                    bmCard.style.display = 'none';
+                }
+            }
+
+            // 퀘스트 버튼 표시 제어
+            const qCard = document.getElementById('quest-card');
+            if (qCard) {
+                if (gameState.quests && gameState.quests.length > 0) {
+                    qCard.style.display = 'block';
+                    updateQuestTimer();
+                } else {
+                    qCard.style.display = 'none';
+                }
+            }
+
             // 날씨 효과 표시
             const weatherEffect = getWeatherEffectDescription(gameState.weather);
             document.getElementById('weather-effect').textContent = `${gameState.weather} ${gameState.weatherName}: ${weatherEffect}`;
@@ -2052,6 +2120,30 @@
             updateTimerWeatherStyle();
         }
 
+        // 퀘스트 타이머 업데이트
+        function updateQuestTimer() {
+            if (!gameState.quests || gameState.quests.length === 0) return;
+            
+            const qTimer = document.getElementById('quest-timer');
+            if (!qTimer) return;
+
+            // 가장 먼저 끝나는 퀘스트 기준
+            const sortedQuests = [...gameState.quests].sort((a, b) => a.endTime - b.endTime);
+            const nextQuest = sortedQuests[0];
+            const remaining = Math.max(0, nextQuest.endTime - Date.now());
+            
+            if (remaining <= 0) {
+                // 시간이 다 된 퀘스트 제거
+                gameState.quests = gameState.quests.filter(q => q.endTime > Date.now());
+                updateDisplay();
+                return;
+            }
+
+            const minutes = Math.floor(remaining / 60000);
+            const seconds = Math.floor((remaining % 60000) / 1000);
+            qTimer.textContent = `남은 시간: ${minutes}:${seconds.toString().padStart(2, '0')} (${gameState.quests.length}건)`;
+        }
+
         // 시간 포맷팅 함수
         function formatTime(seconds) {
             if (seconds < 60) {
@@ -2078,15 +2170,45 @@
             }
         }
 
-        function getGrowthTiming(plant, plantTime) {
-            const elapsedSeconds = (Date.now() - plantTime) / 1000;
-            const weatherMultiplier = getWeatherGrowthMultiplier();
-            const levelMultiplier = gameState.bonuses.growthSpeed || 1.0;
-            const effectiveGrowTime = plant.growTime / (weatherMultiplier * levelMultiplier);
-            const progress = elapsedSeconds / effectiveGrowTime;
-            const remainingTime = Math.max(0, effectiveGrowTime - elapsedSeconds);
+        function getGrowthTiming(plant, plantTime, isFast = false, daysGrown = 0) {
+            // 0일 식물(초 단위 성장) 처리
+            if (plant.requiredDays === 0) {
+                const elapsedSeconds = (Date.now() - plantTime) / 1000;
+                const weatherMultiplier = getWeatherGrowthMultiplier();
+                const levelMultiplier = gameState.bonuses.growthSpeed || 1.0;
+                const fastMultiplier = isFast ? 2.0 : 1.0;
+                const effectiveGrowTime = plant.growTime / (weatherMultiplier * levelMultiplier * fastMultiplier);
+                const progress = Math.min(1.0, elapsedSeconds / effectiveGrowTime);
+                const remainingTime = Math.max(0, effectiveGrowTime - elapsedSeconds);
+                
+                return { 
+                    progress, 
+                    remainingTime, 
+                    currentDays: 0, 
+                    totalDays: 0 
+                };
+            }
 
-            return { progress, remainingTime, effectiveGrowTime };
+            // 다일 성장 식물 처리
+            const now = Date.now();
+            const elapsedInDay = now - gameState.lastAutoProgress;
+            const fiveMinutesMs = 5 * 60 * 1000;
+            const timeRatioInDay = Math.min(1.0, elapsedInDay / fiveMinutesMs);
+            
+            const growthWeight = isFast ? 2.0 : 1.0;
+            const effectiveDaysGrown = daysGrown + (timeRatioInDay * growthWeight);
+            
+            const progress = Math.min(1.0, effectiveDaysGrown / plant.requiredDays);
+            
+            const remainingDays = Math.max(0, plant.requiredDays - effectiveDaysGrown);
+            const remainingTimeSeconds = (remainingDays / growthWeight) * (5 * 60);
+
+            return { 
+                progress, 
+                remainingTime: remainingTimeSeconds, 
+                currentDays: daysGrown, 
+                totalDays: plant.requiredDays 
+            };
         }
 
         // 식물 슬롯 렌더링
@@ -2105,7 +2227,7 @@
                 const plantedCrop = gameState.plantedCrops[i];
                 if (plantedCrop) {
                     const plant = plants.find(p => p.id === plantedCrop.plantId);
-                    const { progress, remainingTime } = getGrowthTiming(plant, plantedCrop.plantTime);
+                    const { progress, remainingTime, currentDays, totalDays } = getGrowthTiming(plant, plantedCrop.plantTime, plantedCrop.isFast, plantedCrop.daysGrown || 0);
                     
                     const isLowCare = (plantedCrop.water < 20 || plantedCrop.nutrition < 20);
                     if (isLowCare) slot.classList.add('warning');
@@ -2122,12 +2244,27 @@
                     if (progress > 0.8) plantIcon = '🌳';
                     if (progress >= 1) plantIcon = plant.emoji || '✨';
 
+                    const fastTag = plantedCrop.isFast ? '⚡' : '';
+                    const dayInfo = totalDays > 0 ? `<small>${currentDays}/${totalDays}일</small>` : '';
+
+                    // 남은 시간 포맷팅 (다일 성장 식물은 일 단위 포함)
+                    let timeDisplay = "";
+                    if (totalDays > 0) {
+                        const daysLeft = Math.floor(remainingTime / 300);
+                        const minsLeft = Math.floor((remainingTime % 300) / 60);
+                        const secsLeft = Math.floor(remainingTime % 60);
+                        if (daysLeft > 0) timeDisplay += `${daysLeft}일 `;
+                        timeDisplay += `${minsLeft}분 ${secsLeft}초`;
+                    } else {
+                        timeDisplay = formatTime(Math.ceil(remainingTime));
+                    }
+
                     if (progress >= 1) {
                         slot.className = 'plant-slot ready';
-                        slot.innerHTML = `${plantIcon}<br>${plant.name}<br><small>수확 가능!</small>${careBars}`;
+                        slot.innerHTML = `${plantIcon}<br>${plant.name}${fastTag}<br>${dayInfo}${dayInfo ? '<br>' : ''}<small>수확 가능!</small>${careBars}`;
                     } else {
                         slot.className = 'plant-slot growing' + (isLowCare ? ' warning' : '');
-                        slot.innerHTML = `${plantIcon}<br>${plant.name}<br><small>${Math.round(progress * 100)}% • ${formatTime(Math.ceil(remainingTime))}</small>${careBars}`;
+                        slot.innerHTML = `${plantIcon}<br>${plant.name}${fastTag}<br>${dayInfo}${dayInfo ? '<br>' : ''}<small>${Math.round(progress * 100)}% • ${timeDisplay}</small>${careBars}`;
                     }
                 } else {
                     slot.innerHTML = '🕳️<br><small>빈 슬롯</small>';
@@ -2208,7 +2345,7 @@
             const plantedCrop = gameState.plantedCrops[slotIndex];
             if (plantedCrop) {
                 const plant = plants.find(p => p.id === plantedCrop.plantId);
-                const { progress } = getGrowthTiming(plant, plantedCrop.plantTime);
+                const { progress } = getGrowthTiming(plant, plantedCrop.plantTime, plantedCrop.isFast, plantedCrop.daysGrown || 0);
                 
                 if (progress >= 1) {
                     harvestPlant(slotIndex);
@@ -2236,14 +2373,15 @@
 
         // 케어 메뉴 표시
         function showCareMenu(slotIndex, plantedCrop, plant) {
-            const { remainingTime, progress } = getGrowthTiming(plant, plantedCrop.plantTime);
+            const { remainingTime, progress, currentDays, totalDays } = getGrowthTiming(plant, plantedCrop.plantTime, plantedCrop.isFast, plantedCrop.daysGrown || 0);
             
             const contentArea = document.getElementById('content-area');
             contentArea.innerHTML = `
                 <button class="back-button" onclick="showMainMenu()">← 뒤로 가기</button>
                 <h2>${plant.name} 관리</h2>
                 <div style="background: rgba(255,255,255,0.1); padding: 20px; border-radius: 15px; margin-bottom: 20px;">
-                    <p>성장률: ${Math.round(progress * 100)}% (${formatTime(Math.ceil(remainingTime))} 남음)</p>
+                    <p>성장 단계: <strong>${currentDays}/${totalDays}일</strong> (${Math.round(progress * 100)}%)</p>
+                    <p>남은 시간: ${formatTime(Math.ceil(remainingTime))}</p>
                     <p>예민도: ${getSensitivityDescription(plant.rarity)}</p>
                     <div style="margin-top: 15px;">
                         <p>💧 수분: ${Math.round(plantedCrop.water)}%</p>
@@ -2319,35 +2457,41 @@
             }
             
             // 기어 효과 적용
-            let growthBoost = 0;
+            let daysToAdvance = 0;
+            let effectMsg = '';
+
             switch (gearId) {
                 case 'water_sprinkler':
-                    growthBoost = 0.1; // 10% 성장 가속
+                    plantedCrop.water = 100;
+                    daysToAdvance = 0.5;
+                    effectMsg = '수분이 충전되고 0.5일만큼 성장했습니다!';
                     break;
                 case 'sunlight_lamp':
-                    growthBoost = 0.2; // 20% 성장 가속
+                    daysToAdvance = 1.0;
+                    effectMsg = '강렬한 빛으로 1일만큼 즉시 성장했습니다!';
                     break;
                 case 'magic_fertilizer':
-                    growthBoost = 0.3; // 30% 성장 가속
+                    daysToAdvance = 3.0;
+                    effectMsg = '마법의 기운으로 3일만큼 즉시 성장했습니다!';
                     break;
                 case 'time_accelerator':
-                    growthBoost = 0.5; // 50% 성장 가속
+                    daysToAdvance = 7.0;
+                    effectMsg = '시간이 뒤틀려 7일만큼 즉시 성장했습니다!';
                     break;
             }
             
-            // 성장 시간 단축
-            const timeReduction = plant.growTime * growthBoost;
-            plantedCrop.plantTime -= timeReduction * 1000; // 밀리초 단위로 변환
+            // 성장 일수 진행
+            plantedCrop.daysGrown = (plantedCrop.daysGrown || 0) + daysToAdvance;
             
-            // 기어 사용
+            // 기어 사용 기록
             gear.count--;
             plantedCrop.usedGears.push(gearId);
             if (gear.count <= 0) {
                 gameState.gears = gameState.gears.filter(g => g.id !== gearId);
             }
             
-            const { remainingTime } = getGrowthTiming(plant, plantedCrop.plantTime);
-            showNotification(`⚙️ ${gear.name}을(를) 사용했습니다! ${plant.name}의 성장이 가속화되었습니다! (${formatTime(Math.ceil(remainingTime))} 남음)`);
+            const { progress, remainingTime } = getGrowthTiming(plant, plantedCrop.plantTime, plantedCrop.isFast, plantedCrop.daysGrown);
+            showNotification(`⚙️ ${gear.name} 사용! ${effectMsg} (성장률: ${Math.round(progress * 100)}%)`);
             
             updateDisplay();
             renderPlantSlots();
@@ -2386,14 +2530,14 @@
             showNotification(`🎊 축하합니다! 레벨 ${gameState.level}이(가) 되었습니다!${bonusText}\n• 영구 성장 속도 보너스: +5%\n• 영구 판매가 보너스: +1%`);
         }
 
-        // 품질 등급 정보
+        // 품질 등급 정보 (B등급 1.0 기준 재조정 - 사용자 요청)
         const qualityGrades = {
-            'S': { label: 'S', emoji: '✨', multiplier: 3.5, color: '#ffbe3e' },
-            'A': { label: 'A', emoji: '⭐', multiplier: 2.5, color: '#ffff3e' },
-            'B': { label: 'B', emoji: '🌟', multiplier: 1.8, color: '#beff3e' },
-            'C': { label: 'C', emoji: '🌿', multiplier: 1.4, color: '#7eff3e' },
-            'D': { label: 'D', emoji: '🌱', multiplier: 1.0, color: '#3eff3e' },
-            'F': { label: 'F', emoji: '🥀', multiplier: 0.7, color: '#888888' }
+            'S': { label: 'S', emoji: '✨', multiplier: 2.5, color: '#ffbe3e' },
+            'A': { label: 'A', emoji: '⭐', multiplier: 1.8, color: '#ffff3e' },
+            'B': { label: 'B', emoji: '🌟', multiplier: 1.0, color: '#beff3e' },
+            'C': { label: 'C', emoji: '🌿', multiplier: 0.8, color: '#7eff3e' },
+            'D': { label: 'D', emoji: '🌱', multiplier: 0.6, color: '#3eff3e' },
+            'F': { label: 'F', emoji: '🥀', multiplier: 0.4, color: '#888888' }
         };
 
         // 식물 수확
@@ -2426,11 +2570,17 @@
             
             // 특별 효과 적용 (기존 로직 유지)
             let specialEffect = '';
+            
+            // 특수 씨앗 효과 표시
+            if (plantedCrop.isFast) {
+                specialEffect += ' (개량종: 성장 2배)';
+            }
+
             const currentWeather = gameState.weather;
             switch (currentWeather) {
-                case '🌙': if (Math.random() < 0.1) specialEffect = ' (달빛 효과: 판매가 1.5배)'; break;
-                case '🌩️': if (Math.random() < 0.1) specialEffect = ' (번개 충전: 판매가 2배)'; break;
-                case '🌈': specialEffect = ' (무지개 효과: 희귀성 부여)'; break;
+                case '🌙': if (Math.random() < 0.1) specialEffect += ' (달빛 효과: 판매가 1.5배)'; break;
+                case '🌩️': if (Math.random() < 0.1) specialEffect += ' (번개 충전: 판매가 2배)'; break;
+                case '🌈': specialEffect += ' (무지개 효과: 희귀성 부여)'; break;
             }
             
             // XP 계산
@@ -2445,6 +2595,7 @@
                 harvestTime: Date.now(),
                 quality: quality,
                 specialEffect: specialEffect,
+                isFast: plantedCrop.isFast, // 특수 씨앗 여부 저장
                 usedGears: Array.isArray(plantedCrop.usedGears) ? [...plantedCrop.usedGears] : []
             });
             
@@ -2484,24 +2635,88 @@
             
             let html = '<table><tr><th>식물</th><th>수량</th><th>액션</th></tr>';
             
-            const inventoryCount = {};
+            // 씨앗 데이터 구조 개선 (일반/특수 구분)
+            const inventoryItems = [];
             gameState.inventory.forEach(item => {
-                inventoryCount[item] = (inventoryCount[item] || 0) + 1;
+                const id = typeof item === 'string' ? item : item.plantId;
+                const isFast = typeof item === 'object' && item.isFast;
+                const key = `${id}_${isFast ? 'fast' : 'normal'}`;
+                
+                const existing = inventoryItems.find(i => i.key === key);
+                if (existing) {
+                    existing.count++;
+                } else {
+                    inventoryItems.push({ key, id, isFast, count: 1 });
+                }
             });
             
-            Object.entries(inventoryCount).forEach(([plantId, count]) => {
-                const plant = plants.find(p => p.id === plantId);
+            inventoryItems.forEach(item => {
+                const plant = plants.find(p => p.id === item.id);
                 html += `
                     <tr>
-                        <td>${plant.emoji} ${plant.name}</td>
-                        <td>${count}</td>
-                        <td><button onclick="plantSeed('${plantId}')" ${gameState.usedSlots >= gameState.totalSlots ? 'disabled' : ''}>심기</button></td>
+                        <td>${plant.emoji} ${plant.name}${item.isFast ? ' ⚡' : ''}</td>
+                        <td>${item.count}</td>
+                        <td><button onclick="plantSeed('${item.id}', ${item.isFast})" ${gameState.usedSlots >= gameState.totalSlots ? 'disabled' : ''}>심기</button></td>
                     </tr>
                 `;
             });
             
             html += '</table>';
             plantInventory.innerHTML = html;
+        }
+
+        // 식물 심기
+        function plantSeed(plantId, isFast = false) {
+            if (gameState.usedSlots >= gameState.totalSlots) {
+                showNotification('❌ 빈 슬롯이 없습니다!');
+                return;
+            }
+            
+            // 인벤토리에서 제거 (객체 형태 또는 문자열 형태 모두 고려)
+            let itemIndex = -1;
+            if (isFast) {
+                itemIndex = gameState.inventory.findIndex(i => typeof i === 'object' && i.plantId === plantId && i.isFast);
+            } else {
+                itemIndex = gameState.inventory.findIndex(i => typeof i === 'string' && i === plantId);
+                // 만약 문자열로 못 찾으면 객체 형태의 일반 씨앗도 체크
+                if (itemIndex === -1) {
+                    itemIndex = gameState.inventory.findIndex(i => typeof i === 'object' && i.plantId === plantId && !i.isFast);
+                }
+            }
+
+            if (itemIndex === -1) return;
+            
+            gameState.inventory.splice(itemIndex, 1);
+            
+            const plant = plants.find(p => p.id === plantId);
+            const newCrop = {
+                plantId: plantId,
+                plantTime: Date.now(),
+                water: 100,
+                nutrition: 100,
+                lastUpdate: Date.now(),
+                isFast: isFast,
+                daysGrown: 0,
+                usedGears: []
+            };
+            
+            // 빈 슬롯 찾기
+            for (let i = 0; i < gameState.totalSlots; i++) {
+                if (!gameState.plantedCrops[i]) {
+                    gameState.plantedCrops[i] = newCrop;
+                    break;
+                }
+            }
+            
+            gameState.usedSlots++;
+            gameState.emptySlots = gameState.totalSlots - gameState.usedSlots;
+            
+            showNotification(`🌱 ${plant.name}${isFast ? '⚡' : ''}을(를) 심었습니다!`);
+            
+            updateDisplay();
+            renderPlantInventory();
+            renderPlantSlots();
+            saveGameState();
         }
 
         // 인벤토리 표시
@@ -2818,12 +3033,19 @@
             sortedPlants.forEach(plant => {
                 const currentBuyPrice = getCurrentBuyPrice(plant);
                 const currentSellPrice = getCurrentSellPrice(plant);
+                const eventSellPrice = getEventPrice(currentSellPrice, plant.id); // 이벤트가 적용된 판매가
                 const currentStock = getCurrentStock(plant);
                 const isUnlocked = gameState.level >= plant.unlockLevel;
                 const trend = getPriceTrend(plant.id);
                 const trendEmoji = trend > 0 ? '📈' : trend < 0 ? '📉' : '➖';
                 const trendClass = trend > 0 ? 'trend-up' : trend < 0 ? 'trend-down' : 'trend-neutral';
                 
+                // 이벤트 보너스 텍스트 생성 (사용자 요청)
+                let eventBonusText = '';
+                if (eventSellPrice > currentSellPrice) {
+                    eventBonusText = `<br><small style="color: #FF6B6B; font-weight: bold;">🎉 이벤트 보너스: +${eventSellPrice - currentSellPrice}</small>`;
+                }
+
                 // 어제 구매가격과 비교
                 const yesterday = gameState.day - 1;
                 const yesterdayPrice = dailyPrices[yesterday] ? dailyPrices[yesterday][plant.id + '_buy'] : null;
@@ -2853,13 +3075,16 @@
                     stockText = `${currentStock}개`;
                 }
                 
+                // 성장 시간 텍스트 (사용자 요청: 다일 성장 식물은 일 단위 표시)
+                const growTimeText = plant.requiredDays > 0 ? `${plant.requiredDays}일` : formatTime(plant.growTime);
+
                 html += `
                     <tr>
                         <td><span style="cursor: pointer; text-decoration: underline;" onclick="showPriceGraph('${plant.id}')">${plant.emoji} ${plant.name}</span></td>
-                        <td>${formatTime(plant.growTime)}</td>
+                        <td>${growTimeText}</td>
                         <td>${getSensitivityDescription(plant.rarity)}</td>
                         <td>💎 ${currentBuyPrice}</td>
-                        <td>💎 ${currentSellPrice}</td>
+                        <td>💎 ${eventSellPrice}${eventBonusText}</td>
                         <td>${stockText}</td>
                         <td class="description">${plant.description}${isUnlocked ? '' : `<br><small style="color: #e74c3c;">LV. ${plant.unlockLevel} 해금</small>`}</td>
                         <td class="${trendClass}">${priceChangeText}</td>
@@ -3437,10 +3662,10 @@
         function renderGearShop() {
             const gearItems = document.getElementById('gear-items');
             const gears = [
-                { id: 'water_sprinkler', name: '💧 물 분무기', price: 50, effect: '성장 속도 +10%' },
-                { id: 'sunlight_lamp', name: '☀️ 햇빛 램프', price: 100, effect: '성장 속도 +20%' },
-                { id: 'magic_fertilizer', name: '🌱 마법 비료', price: 200, effect: '성장 속도 +30%' },
-                { id: 'time_accelerator', name: '⏰ 시간 가속기', price: 500, effect: '성장 속도 +50%' }
+                { id: 'water_sprinkler', name: '💧 물 분무기', price: 100, effect: '수분 100% 충전 + 성장 0.5일 진행' },
+                { id: 'sunlight_lamp', name: '☀️ 햇빛 램프', price: 300, effect: '성장 1일 즉시 진행' },
+                { id: 'magic_fertilizer', name: '🌱 마법 비료', price: 800, effect: '성장 3일 즉시 진행' },
+                { id: 'time_accelerator', name: '⏰ 시간 가속기', price: 2000, effect: '성장 7일 즉시 진행' }
             ];
             
             let html = `
@@ -3471,10 +3696,10 @@
         // 기어 구매
         function buyGear(gearId) {
             const gears = [
-                { id: 'water_sprinkler', name: '💧 물 분무기', price: 50, effect: '성장 속도 +10%' },
-                { id: 'sunlight_lamp', name: '☀️ 햇빛 램프', price: 100, effect: '성장 속도 +20%' },
-                { id: 'magic_fertilizer', name: '🌱 마법 비료', price: 200, effect: '성장 속도 +30%' },
-                { id: 'time_accelerator', name: '⏰ 시간 가속기', price: 500, effect: '성장 속도 +50%' }
+                { id: 'water_sprinkler', name: '💧 물 분무기', price: 100, effect: '수분 100% 충전 + 성장 0.5일 진행' },
+                { id: 'sunlight_lamp', name: '☀️ 햇빛 램프', price: 300, effect: '성장 1일 즉시 진행' },
+                { id: 'magic_fertilizer', name: '🌱 마법 비료', price: 800, effect: '성장 3일 즉시 진행' },
+                { id: 'time_accelerator', name: '⏰ 시간 가속기', price: 2000, effect: '성장 7일 즉시 진행' }
             ];
             
             const gear = gears.find(g => g.id === gearId);
@@ -3661,6 +3886,393 @@
             updateDisplay();
             renderUpgradeShop();
             saveGameState();
+        }
+
+        // 암시장 표시
+        function showBlackMarket() {
+            const contentArea = document.getElementById('content-area');
+            contentArea.innerHTML = `
+                <div style="background: rgba(0,0,0,0.8); color: #fff; padding: 25px; border-radius: 20px; border: 2px solid #e74c3c; box-shadow: 0 0 30px rgba(231, 76, 60, 0.3);">
+                    <button class="back-button" onclick="showMainMenu()" style="background: rgba(231, 76, 60, 0.2); border-color: #e74c3c; color: #fff;">← 돌아가기</button>
+                    <h2 style="color: #e74c3c; text-shadow: 0 0 10px rgba(231, 76, 60, 0.5);">👺 비밀 암시장</h2>
+                    <p style="color: #bdc3c7;">"쉿... 평범한 상점에서는 구할 수 없는 물건들이라네."</p>
+                    <br>
+                    <div id="black-market-items"></div>
+                </div>
+            `;
+            renderBlackMarket();
+        }
+
+        // 암시장 렌더링
+        function renderBlackMarket() {
+            const container = document.getElementById('black-market-items');
+            if (!container || !gameState.blackMarket.items.length) {
+                container.innerHTML = '<p>판매 중인 물건이 없습니다.</p>';
+                return;
+            }
+
+            let html = `
+                <table style="border-color: #e74c3c; color: #ecf0f1;">
+                    <tr style="background: rgba(231, 76, 60, 0.2);">
+                        <th>아이템</th>
+                        <th>설명</th>
+                        <th>💎 가격</th>
+                        <th>액션</th>
+                    </tr>
+            `;
+
+            gameState.blackMarket.items.forEach((item, index) => {
+                let extraInfo = '';
+                if (item.type === 'special_seed') {
+                    const rarityInfo = getSensitivityDescription(item.rarity);
+                    const isBypass = item.unlockLevel > gameState.level;
+                    
+                    // 암시장에서도 성장 일수 기반 시간 표시 (사용자 요청)
+                    const plantData = plants.find(p => p.id === item.plantId);
+                    const growTimeDisplay = (plantData && plantData.requiredDays > 0) ? 
+                        `${plantData.requiredDays}일` : formatTime(item.growTime);
+
+                    extraInfo = `
+                        <div style="margin-top: 8px; padding: 8px; background: rgba(0,0,0,0.3); border-radius: 8px; font-size: 0.85em; border-left: 3px solid #e74c3c;">
+                            <span style="color: #e74c3c;">📈 정보:</span> 
+                            ⏱️ ${growTimeDisplay} | ${rarityInfo}
+                            ${isBypass ? `<br><span style="color: #f1c40f;">🔓 레벨 제한 무시 (원래 LV.${item.unlockLevel} 해금)</span>` : ''}
+                            ${item.isFast ? '<br><span style="color: #3498db;">⚡ 특수 효과: 성장 속도 2배</span>' : ''}
+                        </div>
+                    `;
+                }
+
+                html += `
+                    <tr style="border-bottom: 1px solid rgba(231, 76, 60, 0.3);">
+                        <td><span style="font-size: 1.5em;">${item.emoji}</span> <strong>${item.name}</strong></td>
+                        <td class="description">
+                            ${item.description}
+                            ${extraInfo}
+                        </td>
+                        <td style="color: #f1c40f; font-weight: bold;">💎 ${item.price}</td>
+                        <td>
+                            <button onclick="buyBlackMarketItem(${index})" 
+                                    style="background: #e74c3c; color: #fff; border: none;"
+                                    ${gameState.gold < item.price ? 'disabled' : ''}>
+                                구매
+                            </button>
+                        </td>
+                    </tr>
+                `;
+            });
+
+            html += '</table>';
+            container.innerHTML = html;
+        }
+
+        // 암시장 아이템 구매
+        function buyBlackMarketItem(index) {
+            const item = gameState.blackMarket.items[index];
+            if (gameState.gold < item.price) {
+                showNotification('❌ 골드가 부족합니다!');
+                return;
+            }
+
+            gameState.gold -= item.price;
+            
+            // 특별 아이템 구매
+            switch(item.type) {
+                case 'special_seed':
+                    gameState.inventory.push({
+                        plantId: item.plantId,
+                        isFast: item.isFast
+                    });
+                    showNotification(`👺 ${item.name}을(를) 구매했습니다!`);
+                    break;
+                case 'weather_lock':
+                    gameState.weatherLock = {
+                        weather: item.weather,
+                        weatherName: item.weatherName,
+                        endDay: gameState.day + 1 // 다음날 하루 동안 고정
+                    };
+                    showNotification(`👺 ${item.name}을(를) 사용했습니다! 내일 날씨는 ${item.weather}로 고정됩니다.`);
+                    break;
+                case 'super_gear':
+                    // 기존 기어에 추가
+                    const existingGear = gameState.gears.find(g => g.id === item.gearId);
+                    if (existingGear) {
+                        existingGear.count++;
+                    } else {
+                        gameState.gears.push({
+                            id: item.gearId,
+                            name: item.name,
+                            count: 1,
+                            effect: item.description
+                        });
+                    }
+                    showNotification(`👺 ${item.name}을(를) 구매했습니다!`);
+                    break;
+            }
+
+            // 구매 후 목록에서 제거
+            gameState.blackMarket.items.splice(index, 1);
+            
+            updateDisplay();
+            renderBlackMarket();
+            saveGameState();
+        }
+
+        // 암시장 아이템 생성
+        function generateBlackMarket() {
+            // 10% 확률로 활성화
+            if (Math.random() > 0.1) {
+                gameState.blackMarket.active = false;
+                gameState.blackMarket.items = [];
+                return;
+            }
+
+            gameState.blackMarket.active = true;
+            gameState.blackMarket.lastUpdateDay = gameState.day;
+            
+            const availableSpecialPlants = plants.filter(p => p.rarity === 'legendary' || p.rarity === 'mythic' || p.unlockLevel > gameState.level);
+            const normalPlants = plants.filter(p => gameState.level >= p.unlockLevel);
+            
+            const templates = [
+                {
+                    type: 'special_seed',
+                    name: '⚡ 초고속 {plant} 씨앗',
+                    emoji: '🧬',
+                    weight: 35, // 가중치 추가
+                    description: '성장 속도가 2배 빠른 특수 씨앗입니다.',
+                    getPrice: (p) => {
+                        const buyPrice = getCurrentBuyPrice(p);
+                        const sellPrice = getCurrentSellPrice(p);
+                        return Math.floor(buyPrice + (sellPrice - buyPrice) * 0.4);
+                    }
+                },
+                {
+                    type: 'weather_lock',
+                    name: '🌈 무지개 호출기',
+                    emoji: '🔮',
+                    weight: 10, // 확률 대폭 하향 (10/100)
+                    weather: '🌈',
+                    weatherName: '무지개',
+                    description: '내일 날씨를 무조건 무지개로 고정합니다.',
+                    price: 1500
+                },
+                {
+                    type: 'special_seed',
+                    name: '💎 밀수된 {plant} 씨앗',
+                    emoji: '📦',
+                    weight: 10,
+                    description: '레벨 제한 없이 심을 수 있는 희귀 씨앗입니다.',
+                    getPrice: (p) => {
+                        const buyPrice = getCurrentBuyPrice(p);
+                        const sellPrice = getCurrentSellPrice(p);
+                        return Math.floor(buyPrice + (sellPrice - buyPrice) * 0.7);
+                    }
+                },
+                {
+                    type: 'super_gear',
+                    gearId: 'magic_elixir',
+                    name: '🧪 만능 영양 엘릭서',
+                    emoji: '🧪',
+                    weight: 15,
+                    description: '성장 시간을 80% 즉시 단축시키는 강력한 약물입니다.',
+                    price: 800
+                },
+                {
+                    type: 'weather_lock',
+                    name: '🌙 달빛 유도기',
+                    emoji: '🏮',
+                    weight: 10,
+                    weather: '🌙',
+                    weatherName: '달빛',
+                    description: '내일 날씨를 무조건 달빛으로 고정합니다. (판매가 보너스 확률)',
+                    price: 1000
+                }
+            ];
+
+            const selectedItems = [];
+            const itemCount = Math.floor(Math.random() * 2) + 1; // 1~2개
+
+            for (let i = 0; i < itemCount; i++) {
+                // 가중치 기반 랜덤 선택
+                const totalWeight = templates.reduce((sum, t) => sum + t.weight, 0);
+                let random = Math.random() * totalWeight;
+                let selectedTemplate = templates[0];
+                
+                for (const t of templates) {
+                    if (random < t.weight) {
+                        selectedTemplate = t;
+                        break;
+                    }
+                    random -= t.weight;
+                }
+
+                // 중복 방지 (이미 선택된 타입이면 다시 시도 - 단, 씨앗은 식물이 다르면 허용)
+                const isDuplicate = selectedItems.find(si => {
+                    if (si.type === 'special_seed' && selectedTemplate.type === 'special_seed') return false;
+                    return si.type === selectedTemplate.type && si.name === selectedTemplate.name;
+                });
+                if (isDuplicate && templates.length > selectedItems.length) {
+                    i--; continue;
+                }
+
+                let item = { ...selectedTemplate };
+
+                if (item.type === 'special_seed') {
+                    const isFastSeed = item.name.includes('초고속');
+                    const targetPlant = isFastSeed ? 
+                        normalPlants.filter(p => p.requiredDays >= 1)[Math.floor(Math.random() * normalPlants.filter(p => p.requiredDays >= 1).length)] :
+                        availableSpecialPlants[Math.floor(Math.random() * availableSpecialPlants.length)];
+                    
+                    if (!targetPlant) {
+                        // 식물 매칭 실패 시 다시 시도
+                        i--; continue;
+                    }
+                    
+                    item.name = item.name.replace('{plant}', targetPlant.name);
+                    item.price = item.getPrice(targetPlant);
+                    item.plantId = targetPlant.id;
+                    item.isFast = isFastSeed;
+                    
+                    // 상세 정보 추가
+                    item.growTime = targetPlant.growTime;
+                    item.rarity = targetPlant.rarity;
+                    item.unlockLevel = targetPlant.unlockLevel;
+                    item.plantEmoji = targetPlant.emoji;
+                }
+                
+                selectedItems.push(item);
+            }
+
+            gameState.blackMarket.items = selectedItems;
+        }
+
+        // 퀘스트 메뉴 표시
+        function showQuestMenu() {
+            const contentArea = document.getElementById('content-area');
+            contentArea.innerHTML = `
+                <div style="background: rgba(255,255,255,0.1); padding: 25px; border-radius: 20px; border: 2px solid #f1c40f;">
+                    <button class="back-button" onclick="showMainMenu()">← 돌아가기</button>
+                    <h2>✉️ 단골 손님의 요청</h2>
+                    <br>
+                    <div id="quest-list"></div>
+                </div>
+            `;
+            renderQuests();
+        }
+
+        // 퀘스트 렌더링
+        function renderQuests() {
+            const container = document.getElementById('quest-list');
+            if (!gameState.quests.length) {
+                container.innerHTML = '<p>현재 진행 중인 요청이 없습니다.</p>';
+                return;
+            }
+
+            let html = '';
+            gameState.quests.forEach((quest, index) => {
+                const plant = plants.find(p => p.id === quest.plantId);
+                const grade = qualityGrades[quest.minQuality];
+                const remainingTime = Math.max(0, quest.endTime - Date.now());
+                const minutes = Math.floor(remainingTime / 60000);
+                const seconds = Math.floor((remainingTime % 60000) / 1000);
+
+                html += `
+                    <div style="background: rgba(255,255,255,0.05); padding: 20px; border-radius: 15px; margin-bottom: 15px; border-left: 5px solid #f1c40f;">
+                        <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+                            <div>
+                                <h3 style="color: #f1c40f;">${quest.npcName}의 부탁</h3>
+                                <p>"안녕하세요! 혹시 <strong>${grade.emoji} ${grade.label} 등급 이상의 ${plant.emoji} ${plant.name}</strong>을 구할 수 있을까요?"</p>
+                                <br>
+                                <p>🎁 보상: <span style="color: #4CAF50; font-weight: bold;">XP +${quest.xpReward}</span> (골드 판매가는 50%만 지급)</p>
+                            </div>
+                            <div style="text-align: right;">
+                                <span style="color: #e74c3c; font-weight: bold;">⏳ ${minutes}:${seconds.toString().padStart(2, '0')}</span>
+                            </div>
+                        </div>
+                        <br>
+                        <button onclick="completeQuest(${index})" 
+                                style="width: 100%; padding: 12px; background: #f1c40f; color: #000; border: none; font-weight: bold;">
+                            요청 들어주기 (식물 전달)
+                        </button>
+                    </div>
+                `;
+            });
+
+            container.innerHTML = html;
+        }
+
+        // 퀘스트 완료
+        function completeQuest(index) {
+            const quest = gameState.quests[index];
+            const plant = plants.find(p => p.id === quest.plantId);
+            const qualityOrder = ['S', 'A', 'B', 'C', 'D', 'F'];
+            const minQualityIdx = qualityOrder.indexOf(quest.minQuality);
+
+            // 조건에 맞는 식물 찾기
+            const plantIdx = gameState.harvestedPlants.findIndex(p => 
+                p.plantId === quest.plantId && 
+                qualityOrder.indexOf(p.quality) <= minQualityIdx
+            );
+
+            if (plantIdx === -1) {
+                const grade = qualityGrades[quest.minQuality];
+                showNotification(`❌ ${grade.label} 등급 이상의 ${plant.name}이 인벤토리에 없습니다!`);
+                return;
+            }
+
+            // 식물 제거 및 보상 지급
+            const harvestedPlant = gameState.harvestedPlants[plantIdx];
+            const basePrice = getCurrentSellPrice(plant);
+            const qualityPrice = getQualityPrice(plant, basePrice, harvestedPlant.quality, harvestedPlant.specialEffect || '');
+            const goldReward = Math.floor(qualityPrice * 0.5); // 골드는 50%만
+
+            gameState.harvestedPlants.splice(plantIdx, 1);
+            gameState.gold += goldReward;
+            addXp(quest.xpReward);
+
+            showNotification(`✅ 퀘스트 완료! 💎 ${goldReward} 골드와 🌟 ${quest.xpReward} XP를 획득했습니다.`);
+            
+            gameState.quests.splice(index, 1);
+            updateDisplay();
+            renderQuests();
+            saveGameState();
+        }
+
+        // 퀘스트 생성
+        function generateQuest() {
+            // 이미 퀘스트가 3개 이상이면 생성 안 함
+            if (gameState.quests.length >= 3) return;
+            
+            // 30% 확률로 발생
+            if (Math.random() > 0.3) return;
+
+            const availablePlants = plants.filter(p => gameState.level >= p.unlockLevel);
+            if (!availablePlants.length) return;
+
+            const plant = availablePlants[Math.floor(Math.random() * availablePlants.length)];
+            const qualities = ['B', 'A', 'S'];
+            const minQuality = qualities[Math.floor(Math.random() * qualities.length)];
+            
+            const npcNames = ['약초꾼 톰', '연금술사 마리', '귀족 영애 엘레나', '시장 상인 잭', '신비한 노인'];
+            
+            // 난이도에 따른 XP 보상 (B: 2배, A: 4배, S: 8배)
+            const baseXP = { 'common': 50, 'uncommon': 120, 'rare': 300, 'epic': 800, 'legendary': 2000, 'mythic': 5000 };
+            const multiplier = { 'B': 2, 'A': 4, 'S': 8 };
+            const xpReward = Math.floor(baseXP[plant.rarity] * multiplier[minQuality]);
+            
+            // 퀘스트 시간: 식물 성장 일수에 비례하여 조정 (최소 5분, 일당 +5분)
+            const questDurationMs = Math.max(5, (plant.requiredDays || 0) + 1) * 5 * 60 * 1000;
+
+            const newQuest = {
+                npcName: npcNames[Math.floor(Math.random() * npcNames.length)],
+                plantId: plant.id,
+                minQuality: minQuality,
+                xpReward: xpReward,
+                startTime: Date.now(),
+                endTime: Date.now() + questDurationMs
+            };
+
+            gameState.quests.push(newQuest);
+            showNotification(`✉️ 새로운 손님의 요청이 도착했습니다!`);
         }
 
         // 시세 확인 표시
@@ -4020,19 +4632,28 @@
                     return false;
                 }
                 gameState.gold -= cost;
-                // 스킵 시에만 비용 증가
-                gameState.nextDayCost += 10;
+                // 수동 스킵 시에만 비용 증가 (사용자 요청)
+                gameState.nextDayCost += 5;
             }
             
             gameState.day++;
             gameState.time = '6:00 AM';
 
-            // 다음날이 되면 심어진 식물은 모두 성장 완료 상태로 만듭니다.
+            // 모든 심어진 식물의 성장 일수 진행 (사용자 요청)
             gameState.plantedCrops.forEach(crop => {
                 const plant = plants.find(p => p.id === crop.plantId);
                 if (!plant) return;
-                crop.plantTime = Date.now() - (plant.growTime * 1000);
-                crop.notified = false;
+                
+                // 성장 일수 증가 (초고속 씨앗은 2일씩 성장)
+                const growthAmount = crop.isFast ? 2 : 1;
+                crop.daysGrown = (crop.daysGrown || 0) + growthAmount;
+                
+                // 성장 완료 체크 알림을 위해 notified 초기화
+                if (crop.daysGrown >= plant.requiredDays) {
+                    // 완료 상태 유지
+                } else {
+                    crop.notified = false;
+                }
             });
             
             // 이벤트 업데이트
@@ -4049,13 +4670,32 @@
             generateDailyNews();
             
             // 확률 기반 날씨 선택
-            const newWeather = selectWeatherByProbability();
+            let newWeather;
+            
+            // 날씨 고정 아이템(암시장) 효과 체크
+            if (gameState.weatherLock && gameState.day < gameState.weatherLock.endDay) {
+                newWeather = weathers.find(w => w.emoji === gameState.weatherLock.weather);
+                showNotification(`🔮 날씨 고정 장치가 작동 중입니다! 내일 날씨: ${newWeather.emoji} ${newWeather.name}`);
+            } else {
+                newWeather = selectWeatherByProbability();
+                // 고정 효과 만료 시 제거
+                if (gameState.weatherLock && gameState.day >= gameState.weatherLock.endDay) {
+                    gameState.weatherLock = null;
+                }
+            }
+            
             gameState.weather = newWeather.emoji;
             gameState.weatherName = newWeather.name;
             
             // 배경 변경
             document.body.className = newWeather.class;
             
+            // 암시장 생성 (90% 확률)
+            generateBlackMarket();
+            
+            // 퀘스트 생성 (매일 체크)
+            generateQuest();
+
             showNotification(`🌅 새로운 하루가 시작되었습니다! (Day ${gameState.day})`);
             showNotification(`🌤️ 오늘의 날씨: ${newWeather.emoji} ${newWeather.name}`);
             showNotification(`💰 씨앗 가격이 변동되었습니다!`);
@@ -4364,7 +5004,7 @@
                 // 성장 완료된 식물 확인
                 gameState.plantedCrops.forEach((crop, index) => {
                     const plant = plants.find(p => p.id === crop.plantId);
-                    const { progress } = getGrowthTiming(plant, crop.plantTime);
+                    const { progress } = getGrowthTiming(plant, crop.plantTime, crop.isFast, crop.daysGrown || 0);
                     
                     if (progress >= 1 && !crop.notified) {
                         showNotification(`✨ ${plant.name}이(가) 성장 완료되었습니다!`);
@@ -4381,6 +5021,14 @@
                 
                 // 타이머 실시간 업데이트
                 updateTimer();
+
+                // 헤더 및 퀘스트 카드 실시간 업데이트 (사용자 요청)
+                updateDisplay();
+                
+                // 퀘스트 메뉴가 열려있을 때 실시간 타이머 갱신 (사용자 요청)
+                if (document.getElementById('quest-list')) {
+                    renderQuests();
+                }
                 
                 // 케어 메뉴가 열려있을 때 실시간 수치 갱신
                 const contentArea = document.getElementById('content-area');
