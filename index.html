@@ -1421,6 +1421,7 @@
                 <div>Slots: <span id="used-slots">0</span>/<span id="total-slots">2</span> (Empty slots: <span id="empty-slots">0</span>)</div>
                 <div>Weather: <span id="current-weather">☀️</span> <span id="weather-name">Sunny</span></div>
                 <div id="weather-effect">☀️ 맑음: 좋은 품질 확률 증가</div>
+                <div>Skip Cost: 💎 <span id="next-day-cost">20</span></div>
                 <div id="active-events"></div>
             </div>
         </div>
@@ -1474,6 +1475,7 @@
             plantedCrops: [],
             gears: [], // 기어 인벤토리
             lastSave: Date.now(),
+            nextDayCost: 20, // 다음날 스킵 비용
             slotCost: 10, // 슬롯 구매 비용
             activeEvents: [], // 활성 이벤트 목록
             news: [], // 오늘 활성화된 뉴스 목록 (어제 발생한 뉴스)
@@ -2019,6 +2021,7 @@
             document.getElementById('empty-slots').textContent = gameState.emptySlots;
             document.getElementById('current-weather').textContent = gameState.weather;
             document.getElementById('weather-name').textContent = gameState.weatherName;
+            document.getElementById('next-day-cost').textContent = gameState.nextDayCost;
             
             // 날씨 효과 표시
             const weatherEffect = getWeatherEffectDescription(gameState.weather);
@@ -3346,6 +3349,7 @@
                     plantedCrops: [],
                     gears: [],
                     lastSave: Date.now(),
+                    nextDayCost: 20, // 다음날 스킵 비용
                     slotCost: 10,
                     activeEvents: [],
                     lastAutoProgress: Date.now(),
@@ -3890,14 +3894,15 @@
 
         // 다음날 기다리기 확인
         function waitNextDay() {
+            const cost = gameState.nextDayCost;
             const confirmMessage = `🌅 Day ${gameState.day}에서 Day ${gameState.day + 1}로 진행하시겠습니까?\n\n` +
                                  `• 새로운 날씨가 설정됩니다\n` +
                                  `• 씨앗 가격이 변동됩니다\n` +
                                  `• 심어진 식물들이 성장합니다\n` +
-                                 `• 비용: 무료! (사용자 요청)`;
+                                 `• 비용: 💎 ${cost} 골드 (즉시 스킵)`;
             
             if (confirm(confirmMessage)) {
-                proceedToNextDay();
+                proceedToNextDay(true);
             }
         }
 
@@ -4006,12 +4011,21 @@
         }
 
         // 다음날로 진행
-        function proceedToNextDay() {
-            // 비용 소모 제거 (사용자 요청)
+        function proceedToNextDay(isManualSkip = false) {
+            let cost = 0;
+            if (isManualSkip) {
+                cost = gameState.nextDayCost;
+                if (gameState.gold < cost) {
+                    showNotification(`❌ 골드가 부족합니다! 다음날 스킵하려면 💎 ${cost} 골드가 필요합니다.`);
+                    return false;
+                }
+                gameState.gold -= cost;
+                // 스킵 시에만 비용 증가
+                gameState.nextDayCost += 10;
+            }
+            
             gameState.day++;
             gameState.time = '6:00 AM';
-            
-            // 다음날 비용 증가 로직 제거 (사용자 요청)
 
             // 다음날이 되면 심어진 식물은 모두 성장 완료 상태로 만듭니다.
             gameState.plantedCrops.forEach(crop => {
@@ -4045,7 +4059,10 @@
             showNotification(`🌅 새로운 하루가 시작되었습니다! (Day ${gameState.day})`);
             showNotification(`🌤️ 오늘의 날씨: ${newWeather.emoji} ${newWeather.name}`);
             showNotification(`💰 씨앗 가격이 변동되었습니다!`);
-            // 다음날 진행 비용 알림 제거 (사용자 요청)
+            
+            if (isManualSkip) {
+                showNotification(`💸 다음날 스킵 비용: -${cost} 골드`);
+            }
             
             // 새로운 이벤트 알림
             newEvents.forEach(event => {
