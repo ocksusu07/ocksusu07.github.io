@@ -1421,7 +1421,6 @@
                 <div>Slots: <span id="used-slots">0</span>/<span id="total-slots">2</span> (Empty slots: <span id="empty-slots">0</span>)</div>
                 <div>Weather: <span id="current-weather">☀️</span> <span id="weather-name">Sunny</span></div>
                 <div id="weather-effect">☀️ 맑음: 좋은 품질 확률 증가</div>
-                <div>Next Day Cost: 💎 <span id="next-day-cost">10</span></div>
                 <div id="active-events"></div>
             </div>
         </div>
@@ -1475,7 +1474,6 @@
             plantedCrops: [],
             gears: [], // 기어 인벤토리
             lastSave: Date.now(),
-            nextDayCost: 20, // 다음날로 넘어가는 비용
             slotCost: 10, // 슬롯 구매 비용
             activeEvents: [], // 활성 이벤트 목록
             news: [], // 오늘 활성화된 뉴스 목록 (어제 발생한 뉴스)
@@ -1497,7 +1495,6 @@
             shopSortCriteria: 'level', // 기본 정렬: 해금 레벨순
             shopSortOrder: 'asc'       // 기본 정렬: 오름차순
         };
-        let autoProgressPausedAt = null;
 
         // 마법 식물 데이터
         const plants = [
@@ -1825,6 +1822,9 @@
 
         // 게임 상태 저장 (강화된 버전)
         function saveGameState() {
+            // 현재까지 진행된 시간을 저장하여 웹을 닫았다 열었을 때 이어서 흐르게 함 (사용자 요청)
+            gameState.elapsedAutoProgress = Date.now() - gameState.lastAutoProgress;
+            
             const saveData = {
                 ...gameState,
                 dailyPrices: dailyPrices,
@@ -1911,6 +1911,10 @@
                         if (savedState.dailyStock) {
                             dailyStock = savedState.dailyStock;
                         }
+
+                        // 웹을 열었을 때부터 시간이 이어서 흐르도록 설정 (사용자 요청)
+                        // 마지막 저장 시점까지 진행된 시간(ms)을 현재 시점 기준으로 복구합니다.
+                        gameState.lastAutoProgress = Date.now() - (gameState.elapsedAutoProgress || 0);
                         
                         console.log('게임 데이터 로드 완료:', new Date().toLocaleString());
                         showNotification('✅ 게임 데이터를 성공적으로 로드했습니다!');
@@ -1971,11 +1975,38 @@
             gameState.emptySlots = Math.max(0, gameState.totalSlots - gameState.usedSlots);
         }
 
+        // 현재 5분 주기에 맞춰 실시간 게임 시각을 계산하여 표시 (사용자 요청)
+        function getDynamicGameTime() {
+            const now = Date.now();
+            const elapsedMs = now - gameState.lastAutoProgress;
+            const fiveMinutesMs = 5 * 60 * 1000;
+            
+            // 0 ~ 1.0 (5분 내 진행도)
+            const ratio = Math.min(1.0, elapsedMs / fiveMinutesMs);
+            
+            // 6:00 AM(360분) ~ 12:00 AM(다음날 자정, 1440분)
+            const startMin = 6 * 60;
+            const endMin = 24 * 60;
+            const totalDayMin = endMin - startMin; // 1080분
+            
+            const currentMin = Math.floor(startMin + ratio * totalDayMin);
+            
+            // 포맷팅 (HH:MM AM/PM)
+            let h = Math.floor(currentMin / 60) % 24;
+            const m = currentMin % 60;
+            const ampm = h >= 12 ? 'PM' : 'AM';
+            h = h % 12;
+            if (h === 0) h = 12;
+            const mStr = m < 10 ? '0' + m : m;
+            
+            return `${h}:${mStr} ${ampm}`;
+        }
+
         // 화면 업데이트
         function updateDisplay() {
             syncSlotState();
             document.getElementById('current-day').textContent = gameState.day;
-            document.getElementById('current-time').textContent = gameState.time;
+            document.getElementById('current-time').textContent = getDynamicGameTime();
             document.getElementById('player-gold').textContent = gameState.gold;
             document.getElementById('player-level').textContent = gameState.level;
             
@@ -1988,7 +2019,6 @@
             document.getElementById('empty-slots').textContent = gameState.emptySlots;
             document.getElementById('current-weather').textContent = gameState.weather;
             document.getElementById('weather-name').textContent = gameState.weatherName;
-            document.getElementById('next-day-cost').textContent = gameState.nextDayCost;
             
             // 날씨 효과 표시
             const weatherEffect = getWeatherEffectDescription(gameState.weather);
@@ -2059,6 +2089,8 @@
         // 식물 슬롯 렌더링
         function renderPlantSlots() {
             const slotsContainer = document.getElementById('plant-slots');
+            if (!slotsContainer) return;
+            
             slotsContainer.innerHTML = '<h3>🌱 나의 온실:</h3><div class="slots-container"></div>';
             
             const slotsInnerContainer = slotsContainer.querySelector('.slots-container');
@@ -2085,7 +2117,7 @@
                     let plantIcon = '🌱';
                     if (progress > 0.4) plantIcon = '🌿';
                     if (progress > 0.8) plantIcon = '🌳';
-                    if (progress >= 1) plantIcon = '✨';
+                    if (progress >= 1) plantIcon = plant.emoji || '✨';
 
                     if (progress >= 1) {
                         slot.className = 'plant-slot ready';
@@ -2967,6 +2999,13 @@
             gameState.news.forEach(newsItem => {
                 if (newsItem.targetPlantId === plant.id) {
                     price = Math.floor(price * newsItem.effect.buyPrice);
+                    
+                    // 만약 판매가가 오르는 뉴스인데 구매가가 충분히 오르지 않았다면 보정 (사용자 요청)
+                    if (newsItem.effect.isPriceHike && newsItem.effect.sellPrice > newsItem.effect.buyPrice) {
+                        // 판매가 상승폭의 80% 정도는 구매가에도 반영되도록 보정
+                        const bonusMultiplier = 1 + (newsItem.effect.sellPrice - 1) * 0.8;
+                        price = Math.max(price, Math.floor(plant.priceRange[0] * bonusMultiplier));
+                    }
                 }
             });
             
@@ -3292,7 +3331,7 @@
                 // 게임 상태 초기화
                 gameState = {
                     day: 1,
-                    time: '6:00 AM',
+                    gameTimeMinutes: 360, // 6:00 AM (6 * 60)
                     gold: 100,
                     level: 1,
                     xp: 0,
@@ -3307,7 +3346,6 @@
                     plantedCrops: [],
                     gears: [],
                     lastSave: Date.now(),
-                    nextDayCost: 20,
                     slotCost: 10,
                     activeEvents: [],
                     lastAutoProgress: Date.now(),
@@ -3514,6 +3552,12 @@
             showNotification(`🏡 온실 슬롯을 구매했습니다! +1 슬롯, -${cost} 골드`);
             
             updateDisplay();
+            
+            // 현재 화면이 온실 확장 화면이면 즉시 갱신 (사용자 요청)
+            if (document.getElementById('slot-items')) {
+                renderSlotShop();
+            }
+            
             renderPlantSlots();
             saveGameState();
         }
@@ -3832,27 +3876,28 @@
             }
             showNotification(`💰 ${plant.emoji} ${plant.name} (${grade.emoji} ${grade.label} 등급)을(를) 판매했습니다! +${eventPrice} 골드${eventText}`);
             
+            // UI 즉시 업데이트 보강
             updateDisplay();
             refreshAllScreens();
+            
+            // 인벤토리 화면인 경우 직접 재렌더링 시도 (더 확실하게)
+            if (document.getElementById('inventory-content')) {
+                renderInventory();
+            }
             
             saveGameState();
         }
 
         // 다음날 기다리기 확인
         function waitNextDay() {
-            const cost = gameState.nextDayCost;
             const confirmMessage = `🌅 Day ${gameState.day}에서 Day ${gameState.day + 1}로 진행하시겠습니까?\n\n` +
                                  `• 새로운 날씨가 설정됩니다\n` +
                                  `• 씨앗 가격이 변동됩니다\n` +
                                  `• 심어진 식물들이 성장합니다\n` +
-                                 `• 비용: 💎 ${cost} 골드`;
+                                 `• 비용: 무료! (사용자 요청)`;
             
             if (confirm(confirmMessage)) {
-                if (gameState.gold >= cost) {
-                    proceedToNextDay();
-                } else {
-                    showNotification('❌ 골드가 부족합니다! 다음날로 진행하려면 💎 ' + cost + ' 골드가 필요합니다.');
-                }
+                proceedToNextDay();
             }
         }
 
@@ -3962,17 +4007,11 @@
 
         // 다음날로 진행
         function proceedToNextDay() {
-            const cost = gameState.nextDayCost;
-            if (gameState.gold < cost) {
-                showNotification(`❌ 골드가 부족합니다! 다음날 진행하려면 💎 ${cost} 골드가 필요합니다.`);
-                return false;
-            }
-            gameState.gold -= cost;
+            // 비용 소모 제거 (사용자 요청)
             gameState.day++;
             gameState.time = '6:00 AM';
             
-            // 다음날 비용 증가 (상승폭 강화)
-            gameState.nextDayCost += 10;
+            // 다음날 비용 증가 로직 제거 (사용자 요청)
 
             // 다음날이 되면 심어진 식물은 모두 성장 완료 상태로 만듭니다.
             gameState.plantedCrops.forEach(crop => {
@@ -4006,7 +4045,7 @@
             showNotification(`🌅 새로운 하루가 시작되었습니다! (Day ${gameState.day})`);
             showNotification(`🌤️ 오늘의 날씨: ${newWeather.emoji} ${newWeather.name}`);
             showNotification(`💰 씨앗 가격이 변동되었습니다!`);
-            showNotification(`💸 다음날 진행 비용: -${cost} 골드`);
+            // 다음날 진행 비용 알림 제거 (사용자 요청)
             
             // 새로운 이벤트 알림
             newEvents.forEach(event => {
@@ -4020,6 +4059,7 @@
             
             // 자동 진행 타이머 리셋
             gameState.lastAutoProgress = Date.now();
+            gameState.elapsedAutoProgress = 0; // 진행 시간 초기화 (사용자 요청)
             
             // 전체 화면 새로고침
             updateDisplay();
@@ -4033,22 +4073,24 @@
             const contentArea = document.getElementById('content-area');
             if (!contentArea) return;
 
-            // 텍스트 매칭보다 실제 화면 요소 존재 여부 기준으로 즉시 갱신
+            // 현재 열려있는 화면 요소 존재 여부 기준으로 해당 화면 즉시 갱신
             if (document.getElementById('shop-items')) {
                 renderSeedShop();
-                return;
             }
             if (document.getElementById('market-prices')) {
                 renderMarketPrices();
-                return;
             }
             if (document.getElementById('inventory-content')) {
                 renderInventory();
-                return;
             }
             if (document.getElementById('plant-inventory')) {
                 renderPlantInventory();
-                return;
+            }
+            if (document.getElementById('plant-slots')) {
+                renderPlantSlots();
+            }
+            if (document.getElementById('growth-status')) {
+                renderGrowthStatus();
             }
         }
 
@@ -4175,9 +4217,6 @@
         // 자동 진행 체크
         function checkAutoProgress() {
             if (!gameState.autoProgressEnabled) return;
-            // 게임을 "보고/플레이"하는 동안만 시간이 흐르게 처리
-            if (document.hidden) return;
-            if (typeof document.hasFocus === 'function' && !document.hasFocus()) return;
             
             const now = Date.now();
             const timeSinceLastProgress = now - gameState.lastAutoProgress;
@@ -4190,7 +4229,7 @@
                     gameState.lastAutoProgress = now;
                     showNotification('⏰ 5분이 지나 자동으로 다음날로 진행되었습니다!');
                 } else {
-                    // 골드 부족 상태에서 알림이 매초 반복되지 않도록 타이머를 리셋합니다.
+                    // 알림이 매초 반복되지 않도록 타이머를 리셋합니다.
                     gameState.lastAutoProgress = now;
                 }
                 
@@ -4199,40 +4238,9 @@
             }
         }
 
-        function pauseAutoProgressTimer() {
-            if (autoProgressPausedAt !== null) return;
-            autoProgressPausedAt = Date.now();
-        }
-
-        function resumeAutoProgressTimer() {
-            if (autoProgressPausedAt === null) return;
-            const pausedDuration = Date.now() - autoProgressPausedAt;
-            // 리셋이 아니라 "일시정지 시간만큼" 기준점을 이동해 남은 시간을 유지합니다.
-            gameState.lastAutoProgress += pausedDuration;
-            autoProgressPausedAt = null;
-        }
-
-        // 창 전환/탭 전환 시 타이머를 초기화하지 않고 "일시정지/재개" 처리
-        window.addEventListener('blur', () => {
-            pauseAutoProgressTimer();
-            updateTimer();
-        });
-        window.addEventListener('focus', () => {
-            resumeAutoProgressTimer();
-            updateTimer();
-        });
-        document.addEventListener('visibilitychange', () => {
-            if (document.hidden) {
-                pauseAutoProgressTimer();
-            } else {
-                resumeAutoProgressTimer();
-            }
-            updateTimer();
-        });
-
         // 타이머 업데이트
         function updateTimer() {
-            const now = autoProgressPausedAt !== null ? autoProgressPausedAt : Date.now();
+            const now = Date.now();
             const timeSinceLastProgress = now - gameState.lastAutoProgress;
             const fiveMinutes = 5 * 60 * 1000; // 5분을 밀리초로
             const remainingTime = Math.max(0, fiveMinutes - timeSinceLastProgress);
