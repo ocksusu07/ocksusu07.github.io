@@ -2284,6 +2284,14 @@
 
                 const elapsed = (now - (crop.lastCareUpdateTime || now)) / 1000;
                 
+                // 영혼이 깃든 화분 효과: 수분/영양 절대 감소 안 함
+                if (crop.soulPot) {
+                    crop.water = 100;
+                    crop.nutrition = 100;
+                    crop.lastCareUpdateTime = now;
+                    return;
+                }
+                
                 // 희귀도별 예민도(감소 배율) 설정
                 const raritySensitivity = {
                     'common': 1.0,
@@ -2478,6 +2486,21 @@
                     daysToAdvance = 7.0;
                     effectMsg = '시간이 뒤틀려 7일만큼 즉시 성장했습니다!';
                     break;
+                case 'soul_pot':
+                    // 영혼이 깃든 화분: 이 슬롯의 식물에 soulPot 플래그
+                    plantedCrop.soulPot = true;
+                    effectMsg = '영혼이 깃든 화분이 씌워졌습니다! 이 식물의 수분/영양이 절대 줄지 않습니다.';
+                    showNotification(`🏺 ${effectMsg}`);
+                    gear.count--;
+                    if (gear.count <= 0) {
+                        gameState.gears = gameState.gears.filter(g => g.id !== gear.id);
+                    }
+                    plantedCrop.usedGears.push(gearId);
+                    updateDisplay();
+                    renderPlantSlots();
+                    renderGearMenu(slotIndex, plantedCrop, plant);
+                    saveGameState();
+                    return;
             }
             
             // 성장 일수 진행
@@ -3963,6 +3986,66 @@
 
             html += '</table>';
             container.innerHTML = html;
+            
+            // 가짜 뉴스 배포권 사용 UI (보유 시 표시)
+            if (gameState.fakeNewsCount > 0) {
+                const fakeNewsDiv = document.createElement('div');
+                fakeNewsDiv.style.cssText = 'margin-top: 20px; padding: 15px; background: rgba(231,76,60,0.15); border: 1px solid #e74c3c; border-radius: 10px;';
+                fakeNewsDiv.innerHTML = `
+                    <h3 style="color: #e74c3c;">📢 가짜 뉴스 배포권 (보유: ${gameState.fakeNewsCount}개)</h3>
+                    <p style="color: #bdc3c7; font-size: 13px;">내일 폭등시킬 작물을 선택하세요. 해당 작물의 판매가가 내일 하루 3배로 치솟습니다!</p>
+                    <div style="display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px;">
+                        ${plants.map(p => `
+                            <button onclick="useFakeNews('${p.id}')" 
+                                style="background: rgba(231,76,60,0.3); color: #fff; border: 1px solid #e74c3c; padding: 6px 12px; border-radius: 8px; cursor: pointer;">
+                                ${p.emoji} ${p.name}
+                            </button>
+                        `).join('')}
+                    </div>
+                `;
+                container.appendChild(fakeNewsDiv);
+            }
+        }
+
+        // 가짜 뉴스 사용
+        function useFakeNews(plantId) {
+            if (!gameState.fakeNewsCount || gameState.fakeNewsCount <= 0) {
+                showNotification('❌ 가짜 뉴스 배포권이 없습니다!');
+                return;
+            }
+            const plant = plants.find(p => p.id === plantId);
+            if (!plant) return;
+
+            gameState.fakeNewsCount--;
+            
+            // 내일 적용될 이벤트로 등록 (3배 가격 폭등, 1일)
+            const fakeEvent = {
+                id: 'fake_news_' + Date.now(),
+                name: `📰 ${plant.name} 대폭등 소식`,
+                description: `${plant.emoji} ${plant.name}의 희귀 효능이 발견되었습니다!`,
+                affectedPlants: [plantId],
+                priceMultiplier: 3.0,
+                probability: 1.0,
+                duration: 1,
+                startDay: gameState.day + 1,
+                endDay: gameState.day + 2
+            };
+            gameState.activeEvents.push(fakeEvent);
+            
+            // 뉴스 이력에도 추가
+            const fakeNews = {
+                day: gameState.day,
+                effectiveDay: gameState.day + 1,
+                title: `🚨 속보: ${plant.name} 신비한 효능 발견!`,
+                content: `마법 연구소에서 ${plant.emoji} ${plant.name}의 놀라운 효능을 발견했다고 발표했습니다. 시장에서 수요가 폭증하며 내일 하루 판매가가 3배로 치솟을 전망입니다.`
+            };
+            gameState.upcomingNews.push(fakeNews);
+            gameState.newsHistory.push(fakeNews);
+
+            showNotification(`📢 가짜 뉴스 배포! 내일 ${plant.emoji} ${plant.name} 판매가가 3배가 됩니다!`);
+            updateDisplay();
+            renderBlackMarket();
+            saveGameState();
         }
 
         // 암시장 아이템 구매
@@ -4007,6 +4090,33 @@
                     }
                     showNotification(`👺 ${item.name}을(를) 구매했습니다!`);
                     break;
+                case 'skip_reset':
+                    // 다음 수동 스킵 비용을 0으로 초기화
+                    gameState.nextDayCostFreeOnce = true;
+                    showNotification(`⌚ 낡은 회중시계를 사용했습니다! 다음 수동 스킵이 무료입니다.`);
+                    break;
+                case 'soul_pot':
+                    // 영혼이 깃든 화분: 인벤토리에 추가, 사용 시 현재 심긴 식물에 효과 적용
+                    gameState.soulPotCount = (gameState.soulPotCount || 0) + 1;
+                    showNotification(`🏺 영혼이 깃든 화분을 획득했습니다! 인벤토리 → 기어에서 사용할 수 있습니다.`);
+                    // 기어 목록에 추가해 사용 가능하게
+                    const soulPotGear = gameState.gears.find(g => g.id === 'soul_pot');
+                    if (soulPotGear) {
+                        soulPotGear.count++;
+                    } else {
+                        gameState.gears.push({
+                            id: 'soul_pot',
+                            name: '🏺 영혼이 깃든 화분',
+                            count: 1,
+                            effect: '이 식물의 수분과 영양이 절대 줄어들지 않습니다 (1회용)'
+                        });
+                    }
+                    break;
+                case 'fake_news':
+                    // 가짜 뉴스 배포권: 사용 시 원하는 식물 선택 UI 표시
+                    gameState.fakeNewsCount = (gameState.fakeNewsCount || 0) + 1;
+                    showNotification(`📢 가짜 뉴스 배포권을 획득했습니다! 사용하려면 암시장에서 [뉴스 선택] 버튼을 이용하세요.`);
+                    break;
             }
 
             // 구매 후 목록에서 제거
@@ -4020,7 +4130,7 @@
         // 암시장 아이템 생성
         function generateBlackMarket() {
             // 10% 확률로 활성화
-            if (Math.random() > 0.1) {
+            if (Math.random() > 0.9) {
                 gameState.blackMarket.active = false;
                 gameState.blackMarket.items = [];
                 return;
@@ -4037,7 +4147,7 @@
                     type: 'special_seed',
                     name: '⚡ 초고속 {plant} 씨앗',
                     emoji: '🧬',
-                    weight: 35, // 가중치 추가
+                    weight: 25, // 가중치 추가
                     description: '성장 속도가 2배 빠른 특수 씨앗입니다.',
                     getPrice: (p) => {
                         const buyPrice = getCurrentBuyPrice(p);
@@ -4057,8 +4167,8 @@
                         const sellPrice = getCurrentSellPrice(p);
                         return Math.floor(buyPrice + (sellPrice - buyPrice) * 0.7);
                     }
-                },
-                */
+            
+                },*/
                 {
                     type: 'super_gear',
                     gearId: 'magic_elixir',
@@ -4068,11 +4178,35 @@
                     description: '성장 시간을 80% 즉시 단축시키는 강력한 약물입니다.',
                     price: 800
                 },
-               
+                
+                {
+                    type: 'skip_reset',
+                    name: '⏱️ 낡은 회중시계',
+                    emoji: '⌚',
+                    weight: 5,
+                    description: '다음번 수동 스킵 비용을 0골드로 초기화합니다. 스킵 비용이 너무 비싸졌을 때 사용하는 가성비 구원템.',
+                    price: Math.floor(80 + Math.random() * 70) // 80~150골드
+                },
+                {
+                    type: 'soul_pot',
+                    name: '🏺 영혼이 깃든 화분',
+                    emoji: '🏺',
+                    weight: 10,
+                    description: '이 화분에 심은 식물은 수분과 영양이 절대 줄어들지 않습니다. (1회용) 8일짜리 전설 식물을 심어두고 마음 편히 방치할 때 필수.',
+                    price: Math.floor(600 + Math.random() * 400) // 600~1000골드
+                },
+                {
+                    type: 'fake_news',
+                    name: '📢 가짜 뉴스 배포권',
+                    emoji: '📰',
+                    weight: 15,
+                    description: '사용 시 내일 발생할 뉴스를 직접 선택할 수 있습니다. 원하는 작물의 시세를 폭등시켜 시세 차익을 노리세요.',
+                    price: Math.floor(400 + Math.random() * 300) // 400~700골드
+                }
             ];
 
             const selectedItems = [];
-            const itemCount = Math.floor(Math.random() * 2) + 1; // 1~2개
+            const itemCount = 3; // 항상 3개
 
             for (let i = 0; i < itemCount; i++) {
                 // 가중치 기반 랜덤 선택
@@ -4098,6 +4232,8 @@
                 }
 
                 let item = { ...selectedTemplate };
+                // price가 함수가 아닌 경우 고정값 그대로 사용 (skip_reset, soul_pot, fake_news)
+                // 이미 숫자로 평가된 price는 그대로 유지
 
                 if (item.type === 'special_seed') {
                     const isFastSeed = item.name.includes('초고속');
@@ -4489,6 +4625,22 @@
 
         // 다음날 기다리기 확인
         function waitNextDay() {
+            // 낡은 회중시계 효과: 다음 스킵 무료
+            if (gameState.nextDayCostFreeOnce) {
+                const confirmMessage = `🌅 Day ${gameState.day}에서 Day ${gameState.day + 1}로 진행하시겠습니까?\n\n` +
+                                     `• 새로운 날씨가 설정됩니다\n` +
+                                     `• 씨앗 가격이 변동됩니다\n` +
+                                     `• 심어진 식물들이 성장합니다\n` +
+                                     `• ⌚ 낡은 회중시계 효과로 이번 스킵은 무료입니다!`;
+                if (confirm(confirmMessage)) {
+                    gameState.nextDayCostFreeOnce = false;
+                    // 비용 없이 진행하되 nextDayCost는 초기화
+                    gameState.nextDayCost = 20;
+                    proceedToNextDay(false); // 비용 없이
+                    showNotification(`⌚ 회중시계 효과! 스킵 비용이 0골드였으며, 다음 스킵 비용이 20골드로 초기화되었습니다.`);
+                }
+                return;
+            }
             const cost = gameState.nextDayCost;
             const confirmMessage = `🌅 Day ${gameState.day}에서 Day ${gameState.day + 1}로 진행하시겠습니까?\n\n` +
                                  `• 새로운 날씨가 설정됩니다\n` +
