@@ -2607,7 +2607,7 @@
             }
             
             // XP 계산
-            const rarityXp = { 'common': 10, 'uncommon': 25, 'rare': 60, 'epic': 150, 'legendary': 400, 'mythic': 1000 };
+            const rarityXp = { 'common': 30, 'uncommon': 60, 'rare': 90, 'epic': 170, 'legendary': 450, 'mythic': 1000 };
             const gradeMultiplier = qualityGrades[quality].multiplier / 2 + 0.5; // XP는 가격만큼 뻥튀기되지 않게 조절
             const xpUpgradeMult = 1 + ((gameState.upgrades.xpGloves || 0) * 0.1); // 장갑 업그레이드
             const xpGained = Math.floor(rarityXp[plant.rarity] * gradeMultiplier * xpUpgradeMult);
