@@ -4143,6 +4143,7 @@
             const normalPlants = plants.filter(p => gameState.level >= p.unlockLevel);
             
             const templates = [
+                /*
                 {
                     type: 'special_seed',
                     name: '⚡ 초고속 {plant} 씨앗',
@@ -4154,8 +4155,9 @@
                         const sellPrice = getCurrentSellPrice(p);
                         return Math.floor(buyPrice + (sellPrice - buyPrice) * 0.4);
                     }
+                    
                 },
-                /*
+                
                 {
                     type: 'special_seed',
                     name: '💎 밀수된 {plant} 씨앗',
