@@ -1852,7 +1852,8 @@
             },
             quests: [], // 활성 퀘스트 목록
             weatherLock: null, // 날씨 고정 정보 { weather: '🌈', endDay: 5 }
-            currentManagedSlot: null // 현재 관리 중인 슬롯 인덱스
+            currentManagedSlot: null, // 현재 관리 중인 슬롯 인덱스
+            nickname: null // 유저 닉네임 (최초 1회 설정)
         };
 
         // 마법 식물 데이터
@@ -2681,8 +2682,8 @@
             // 다일 성장 식물 처리
             const now = Date.now();
             const elapsedInDay = now - gameState.lastAutoProgress;
-            const fiveMinutesMs = 5 * 60 * 1000;
-            const timeRatioInDay = Math.min(1.0, elapsedInDay / fiveMinutesMs);
+            const dayDurationMs = 3 * 60 * 1000; // 3분으로 변경
+            const timeRatioInDay = Math.min(1.0, elapsedInDay / dayDurationMs);
             
             const growthWeight = isFast ? 2.0 : 1.0;
             const effectiveDaysGrown = daysGrown + (timeRatioInDay * growthWeight);
@@ -2690,7 +2691,7 @@
             const progress = Math.min(1.0, effectiveDaysGrown / plant.requiredDays);
             
             const remainingDays = Math.max(0, plant.requiredDays - effectiveDaysGrown);
-            const remainingTimeSeconds = (remainingDays / growthWeight) * (5 * 60);
+            const remainingTimeSeconds = (remainingDays / growthWeight) * (3 * 60);
 
             return { 
                 progress, 
@@ -5417,13 +5418,21 @@
 
         // 랭킹 등록
         function registerRanking() {
-            let nickname = prompt("랭킹에 등록할 닉네임을 입력하세요 (최대 8자):", "");
-            if (nickname === null) return; // 취소 버튼
+            let nickname = gameState.nickname;
             
-            nickname = nickname.trim().substring(0, 8);
-            if (nickname === "") {
-                showNotification("❌ 닉네임을 입력해주세요.");
-                return;
+            // 닉네임이 없으면 새로 입력받음
+            if (!nickname) {
+                nickname = prompt("랭킹에 사용할 닉네임을 입력하세요 (최대 8자, 이후 자동 사용):", "");
+                if (nickname === null) return; // 취소 버튼
+                
+                nickname = nickname.trim().substring(0, 8);
+                if (nickname === "") {
+                    showNotification("❌ 닉네임을 입력해주세요.");
+                    return;
+                }
+                
+                gameState.nickname = nickname;
+                saveGameState(); // 닉네임 저장
             }
 
             const rankingData = {
@@ -5434,7 +5443,7 @@
 
             database.ref('rankings/' + nickname).set(rankingData)
                 .then(() => {
-                    showNotification("🏆 랭킹에 성공적으로 등록되었습니다!");
+                    showNotification(`🏆 [${nickname}]님의 기록이 갱신되었습니다!`);
                     if (document.getElementById('ranking-list')) {
                         updateRankingDisplay();
                     }
@@ -5614,14 +5623,14 @@
             
             const now = Date.now();
             const timeSinceLastProgress = now - gameState.lastAutoProgress;
-            const fiveMinutes = 5 * 60 * 1000; // 5분을 밀리초로
+            const dayDuration = 3 * 60 * 1000; // 3분을 밀리초로
             
-            if (timeSinceLastProgress >= fiveMinutes) {
+            if (timeSinceLastProgress >= dayDuration) {
                 // 자동으로 다음날 진행
                 const progressed = proceedToNextDay();
                 if (progressed) {
                     gameState.lastAutoProgress = now;
-                    showNotification('⏰ 5분이 지나 자동으로 다음날로 진행되었습니다!');
+                    showNotification('⏰ 3분이 지나 자동으로 다음날로 진행되었습니다!');
                 } else {
                     // 알림이 매초 반복되지 않도록 타이머를 리셋합니다.
                     gameState.lastAutoProgress = now;
@@ -5636,8 +5645,8 @@
         function updateTimer() {
             const now = Date.now();
             const timeSinceLastProgress = now - gameState.lastAutoProgress;
-            const fiveMinutes = 5 * 60 * 1000; // 5분을 밀리초로
-            const remainingTime = Math.max(0, fiveMinutes - timeSinceLastProgress);
+            const dayDuration = 3 * 60 * 1000; // 3분을 밀리초로
+            const remainingTime = Math.max(0, dayDuration - timeSinceLastProgress);
             
             const minutes = Math.floor(remainingTime / (60 * 1000));
             const seconds = Math.floor((remainingTime % (60 * 1000)) / 1000);
