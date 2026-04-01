@@ -333,6 +333,45 @@
             border: 1px solid rgba(255, 255, 255, 0.3);
         }
 
+        .menu-card {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 12px;
+            padding: 12px;
+            margin-bottom: 12px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .menu-card:hover {
+            transform: translateY(-3px);
+            background: rgba(255, 255, 255, 0.2);
+            border-color: #FFD700;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+        }
+
+        .menu-card-icon {
+            font-size: 24px;
+            margin-bottom: 8px;
+            display: block;
+        }
+
+        .menu-card-title {
+            font-weight: bold;
+            font-size: 14px;
+            margin-bottom: 4px;
+            color: #FFD700;
+        }
+
+        .menu-card-description {
+            font-size: 11px;
+            color: #ddd;
+            line-height: 1.3;
+        }
+
         /* 날씨별 헤더 스타일 */
         body.weather-sunny .header {
             border: 2px solid #FFD700;
@@ -1511,29 +1550,35 @@
             /* 배경색이 확 밝아지는게 싫다면 아래 줄도 주석을 푸세요 */
             /* background: inherit !important; */ 
         }
-        /* 랭킹 시스템 스타일 */
+        .news-history-container {
+            display: flex;
+            gap: 20px;
+            align-items: flex-start;
+        }
+
+        /* 랭킹 시스템 스타일 복구 */
         .global-ranking-board {
             position: fixed;
-            top: 35%; /* 조금 더 위쪽으로 */
+            top: 35%;
             transform: translateY(-50%);
-            left: calc(50% - 600px - 135px - 450px); /* 1200px 컨테이너 기준, 왼쪽으로 더 이동 (-410px -> -450px) */
-            width: 380px; /* 전당 컨테이너 가로 크기 대폭 늘림 (320px -> 380px) */
+            left: calc(50% - 600px - 135px - 450px);
+            width: 380px;
             z-index: 999;
             transition: all 0.3s ease;
         }
 
         @media (max-width: 1750px) {
             .global-ranking-board {
-                left: 5px; /* 왼쪽 끝에 더 붙임 (10px -> 5px) */
-                top: 15px; /* 조금 더 위쪽으로 */
+                left: 5px;
+                top: 15px;
                 transform: none;
-                width: 340px; /* 너비 추가 늘림 (280px -> 340px) */
+                width: 340px;
             }
         }
 
         @media (max-width: 1450px) {
             .global-ranking-board {
-                display: none; /* 해상도가 너무 낮으면 숨김 */
+                display: none;
             }
         }
 
@@ -1583,7 +1628,7 @@
         .ranking-nickname {
             font-weight: bold;
             color: #FFD700;
-            margin-right: 15px; /* 닉네임과 스탯 사이 간격 확보 */
+            margin-right: 15px;
         }
         .ranking-stats {
             font-size: 0.9em;
@@ -1597,22 +1642,8 @@
             font-size: 1.2em;
             padding: 5px;
         }
-        .register-btn {
-            background: #FFD700;
-            color: #000;
-            border: none;
-            padding: 8px 15px;
-            border-radius: 5px;
-            font-weight: bold;
-            cursor: pointer;
-            margin-top: 15px;
-            width: 100%;
-            transition: background 0.2s;
-        }
-        .register-btn:hover {
-            background: #FFC800;
-        }
 
+        /* 공용 섹션 레이아웃 */
         .news-history-container {
             display: flex;
             gap: 20px;
@@ -1639,6 +1670,20 @@
     <!-- 알림 컨테이너 -->
     <div id="notification-container"></div>
 
+    <!-- 좌측 랭킹 보드 복구 -->
+    <div class="global-ranking-board">
+        <div class="ranking-container">
+            <div class="ranking-header">
+                <h2 style="margin: 0; font-size: 16px; color: #FFD700;">🏆 명예의 전당</h2>
+                <button class="toggle-btn" onclick="toggleRanking()"><span id="ranking-toggle-icon">▼</span></button>
+            </div>
+            <ul id="ranking-list" class="ranking-list">
+                <li class="ranking-item" style="justify-content: center;">불러오는 중...</li>
+            </ul>
+            <button class="register-btn" onclick="registerRanking()">📋 내 기록 등록하기</button>
+        </div>
+    </div>
+
     <!-- 닉네임 설정 모달 (커스텀) -->
     <div id="nickname-modal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 10000; backdrop-filter: blur(10px); align-items: center; justify-content: center;">
         <div style="background: rgba(255, 255, 255, 0.1); padding: 40px; border-radius: 25px; border: 1px solid rgba(255, 255, 255, 0.2); width: 400px; text-align: center; box-shadow: 0 20px 60px rgba(0,0,0,0.5); animation: modal-fade-in 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);">
@@ -1659,20 +1704,6 @@
             to { opacity: 1; transform: scale(1) translateY(0); }
         }
     </style>
-
-    <!-- 좌측 랭킹 보드 -->
-    <div class="global-ranking-board">
-        <div class="ranking-container">
-            <div class="ranking-header">
-                <h2 style="margin: 0; font-size: 16px; color: #FFD700;">🏆 명예의 전당</h2>
-                <button class="toggle-btn" onclick="toggleRanking()"><span id="ranking-toggle-icon">▼</span></button>
-            </div>
-            <ul id="ranking-list" class="ranking-list">
-                <li class="ranking-item" style="justify-content: center;">불러오는 중...</li>
-            </ul>
-            <button class="register-btn" onclick="registerRanking()">📋 내 기록 등록하기</button>
-        </div>
-    </div>
 
     <!-- 좌측 사이드바 -->
     <div class="left-sidebar">
@@ -1714,7 +1745,13 @@
             <div class="menu-card-title">시세 확인</div>
             <div class="menu-card-description">현재 시장 가격을 확인하세요</div>
         </div>
-        
+
+        <div class="menu-card" onclick="showTotalRankings()">
+            <span class="menu-card-icon">👑</span>
+            <div class="menu-card-title">전체 랭킹</div>
+            <div class="menu-card-description">모든 관리자의 순위를 확인하세요</div>
+        </div>
+
         <div class="menu-card" onclick="waitNextDay()">
             <span class="menu-card-icon">⏳</span>
             <div class="menu-card-title">다음날 기다리기</div>
@@ -1744,7 +1781,7 @@
 
     <div class="container">
         <div class="header">
-            <h1>🌿 마법 온실 관리자</h1>
+            <h1 style="margin: 0; font-size: 36px; text-shadow: 0 4px 10px rgba(0,0,0,0.3);">🌿 마법 온실 관리자</h1>
             <div id="game-status">
                 <div style="display: flex; justify-content: center; align-items: center; gap: 15px; margin-bottom: 10px;">
                     <div style="font-weight: bold; color: #4CAF50;">LV. <span id="player-level">1</span></div>
@@ -4678,7 +4715,15 @@
                         return Math.floor(buyPrice + (sellPrice - buyPrice) * 0.85);
                     }
                 },
-            
+                {
+                    type: 'super_gear',
+                    gearId: 'magic_elixir',
+                    name: '🧪 만능 영양 엘릭서',
+                    emoji: '🧪',
+                    weight: 15,
+                    description: '성장 시간을 80% 즉시 단축시키는 강력한 약물입니다.',
+                    price: 800
+                },
                 {
                     type: 'fake_news',
                     name: '📢 가짜 뉴스 배포권',
@@ -5489,9 +5534,7 @@
                     if (!isSilent) {
                         showNotification(`🏆 [${gameState.nickname}]님의 기록이 갱신되었습니다!`);
                     }
-                    if (document.getElementById('ranking-list')) {
-                        updateRankingDisplay();
-                    }
+                    updateRankingDisplay();
                 })
                 .catch((error) => {
                     console.error("랭킹 동기화 실패:", error);
@@ -5529,22 +5572,25 @@
                 });
         }
 
-        // 랭킹 표시 업데이트
+        // 랭킹 표시 업데이트 (좌측 부동 보드용)
         function updateRankingDisplay() {
             const rankingList = document.getElementById('ranking-list');
             if (!rankingList) return;
 
             const limit = isRankingExpanded ? 10 : 5;
             
-            database.ref('rankings').orderByChild('level').limitToLast(limit).once('value', (snapshot) => {
+            database.ref('rankings').once('value', (snapshot) => {
                 let items = [];
                 snapshot.forEach((childSnapshot) => {
                     const data = childSnapshot.val();
-                    items.push({
-                        // 구버전(키가 닉네임인 경우)과 신버전(데이터에 nickname 필드가 있는 경우) 모두 대응
-                        nickname: data.nickname || childSnapshot.key,
-                        ...data
-                    });
+                    if (data) {
+                        items.push({
+                            nickname: data.nickname || childSnapshot.key,
+                            level: data.level || 1,
+                            gold: data.gold || 0,
+                            timestamp: data.timestamp || Date.now()
+                        });
+                    }
                 });
                 
                 // 내림차순 정렬 (level 높은 순, 같으면 gold 많은 순)
@@ -5553,8 +5599,9 @@
                     return b.gold - a.gold;
                 });
 
+                const displayItems = items.slice(0, limit);
                 let html = '';
-                items.forEach((item, index) => {
+                displayItems.forEach((item, index) => {
                     let rankEmoji = '';
                     if (index === 0) rankEmoji = '🥇';
                     else if (index === 1) rankEmoji = '🥈';
@@ -5586,6 +5633,115 @@
         function toggleRanking() {
             isRankingExpanded = !isRankingExpanded;
             updateRankingDisplay();
+        }
+
+        // 전체 랭킹 보기 (메인 버튼용)
+        function showTotalRankings() {
+            gameState.currentManagedSlot = null;
+            const contentArea = document.getElementById('content-area');
+            
+            contentArea.innerHTML = `
+                <button class="back-button" onclick="showMainMenu()">← 뒤로 가기</button>
+                <div style="margin-bottom: 25px;">
+                    <h2 style="font-size: 28px; margin-bottom: 8px; color: #FFD700; text-shadow: 0 2px 4px rgba(0,0,0,0.3);">🏆 전체 관리자 랭킹</h2>
+                    <p style="color: #ddd; font-size: 14px;">마법 온실에서 활약 중인 상위 관리자들입니다.</p>
+                </div>
+                
+                <div class="news-history-container">
+                    <div class="news-section">
+                        <h3 style="color: #FFD700; margin-bottom: 15px; border-bottom: 1px solid #FFD700; padding-bottom: 8px;">📊 레벨 순위 (TOP 20)</h3>
+                        <div style="overflow-x: auto;">
+                            <table style="width: 100%;">
+                                <thead>
+                                    <tr>
+                                        <th style="width: 50px;">순위</th>
+                                        <th>관리자</th>
+                                        <th>레벨</th>
+                                        <th>자산</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="total-level-ranking-body">
+                                    <tr><td colspan="4" style="text-align: center; padding: 20px;">불러오는 중...</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                    <div class="ranking-section">
+                        <h3 style="color: #FFD700; margin-bottom: 15px; border-bottom: 1px solid #FFD700; padding-bottom: 8px;">💰 자산 순위 (TOP 20)</h3>
+                        <div style="overflow-x: auto;">
+                            <table style="width: 100%;">
+                                <thead>
+                                    <tr>
+                                        <th style="width: 50px;">순위</th>
+                                        <th>관리자</th>
+                                        <th>자산</th>
+                                        <th>레벨</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="total-gold-ranking-body">
+                                    <tr><td colspan="4" style="text-align: center; padding: 20px;">불러오는 중...</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            `;
+
+            database.ref('users').once('value', (snapshot) => {
+                let items = [];
+                snapshot.forEach((childSnapshot) => {
+                    const data = childSnapshot.val();
+                    if (data) {
+                        items.push({
+                            nickname: data.nickname || "무명관리자",
+                            level: data.level || 1,
+                            gold: data.gold || 0
+                        });
+                    }
+                });
+
+                // 1. 레벨 랭킹
+                const levelItems = [...items].sort((a, b) => {
+                    if (b.level !== a.level) return b.level - a.level;
+                    return b.gold - a.gold;
+                }).slice(0, 20);
+
+                // 2. 자산 랭킹
+                const goldItems = [...items].sort((a, b) => {
+                    if (b.gold !== a.gold) return b.gold - a.gold;
+                    return b.level - a.level;
+                }).slice(0, 20);
+
+                // 레벨 랭킹 렌더링
+                let levelHtml = '';
+                levelItems.forEach((item, index) => {
+                    levelHtml += `
+                        <tr>
+                            <td>${index + 1}</td>
+                            <td style="font-weight: bold; color: #FFD700;">${item.nickname}</td>
+                            <td>Lv.${item.level}</td>
+                            <td>💎 ${item.gold.toLocaleString()}</td>
+                        </tr>
+                    `;
+                });
+                const levelBody = document.getElementById('total-level-ranking-body');
+                if (levelBody) levelBody.innerHTML = levelHtml || '<tr><td colspan="4" style="text-align: center;">데이터 없음</td></tr>';
+
+                // 자산 랭킹 렌더링
+                let goldHtml = '';
+                goldItems.forEach((item, index) => {
+                    goldHtml += `
+                        <tr>
+                            <td>${index + 1}</td>
+                            <td style="font-weight: bold; color: #FFD700;">${item.nickname}</td>
+                            <td>💎 ${item.gold.toLocaleString()}</td>
+                            <td>Lv.${item.level}</td>
+                        </tr>
+                    `;
+                });
+                const goldBody = document.getElementById('total-gold-ranking-body');
+                if (goldBody) goldBody.innerHTML = goldHtml || '<tr><td colspan="4" style="text-align: center;">데이터 없음</td></tr>';
+            });
         }
 
         // 뉴스 이력 보기 (디자인 개선)
