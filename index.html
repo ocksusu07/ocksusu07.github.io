@@ -2413,6 +2413,37 @@
             saveGameState();
         }
 
+        // 수확한 모든 식물 판매
+        function sellAllHarvestedPlants() {
+            if (gameState.harvestedPlants.length === 0) {
+                showNotification('❌ 판매할 식물이 없습니다!');
+                return;
+            }
+
+            let totalGoldGained = 0;
+            const count = gameState.harvestedPlants.length;
+
+            gameState.harvestedPlants.forEach(item => {
+                const plant = plants.find(p => p.id === item.plantId);
+                const currentSellPrice = getCurrentSellPrice(plant);
+                const qualityPrice = getQualityPrice(plant, currentSellPrice, item.quality, item.specialEffect || '');
+                const eventPrice = getEventPrice(qualityPrice, item.plantId);
+                totalGoldGained += eventPrice;
+            });
+
+            gameState.harvestedPlants = [];
+            gameState.gold += totalGoldGained;
+
+            showNotification(`💰 총 ${count}개의 식물을 판매하여 ${totalGoldGained} 골드를 획득했습니다!`);
+            
+            updateDisplay();
+            refreshAllScreens();
+            if (document.getElementById('inventory-content')) {
+                renderInventory();
+            }
+            saveGameState();
+        }
+
         // 닉네임 설정 확인 (커스텀 모달용)
         function confirmNickname() {
             const input = document.getElementById('nickname-input');
@@ -2640,10 +2671,10 @@
             document.getElementById('weather-name').textContent = gameState.weatherName;
             document.getElementById('next-day-cost').textContent = gameState.nextDayCost;
             
-            // 암시장 버튼 표시 제어
+            // 암시장 버튼 표시 제어 (매진 시에도 활성 상태면 유지 - 사용자 요청)
             const bmCard = document.getElementById('black-market-card');
             if (bmCard) {
-                if (gameState.blackMarket && gameState.blackMarket.active && gameState.blackMarket.items.length > 0) {
+                if (gameState.blackMarket && gameState.blackMarket.active) {
                     bmCard.style.display = 'block';
                 } else {
                     bmCard.style.display = 'none';
@@ -2808,7 +2839,16 @@
             const slotsContainer = document.getElementById('plant-slots');
             if (!slotsContainer) return;
             
-            slotsContainer.innerHTML = '<h3>🌱 나의 온실:</h3><div class="slots-container"></div>';
+            slotsContainer.innerHTML = `
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                    <h3 style="margin: 0;">🌱 나의 온실:</h3>
+                    <button onclick="harvestAllReadyPlants()" 
+                            style="background: #4CAF50; color: white; border: none; padding: 5px 12px; border-radius: 8px; font-size: 12px; font-weight: bold; cursor: pointer;">
+                        🧺 전체 수확
+                    </button>
+                </div>
+                <div class="slots-container"></div>
+            `;
             
             const slotsInnerContainer = slotsContainer.querySelector('.slots-container');
             
@@ -3232,6 +3272,34 @@
             saveGameState();
         }
 
+        // 모든 수확 가능한 식물 수확
+        function harvestAllReadyPlants() {
+            let readyIndices = [];
+            for (let i = 0; i < gameState.totalSlots; i++) {
+                const plantedCrop = gameState.plantedCrops[i];
+                if (plantedCrop) {
+                    const plant = plants.find(p => p.id === plantedCrop.plantId);
+                    const { progress } = getGrowthTiming(plant, plantedCrop.plantTime, plantedCrop.isFast, plantedCrop.daysGrown || 0);
+                    if (progress >= 1) {
+                        readyIndices.push(i);
+                    }
+                }
+            }
+
+            if (readyIndices.length === 0) {
+                showNotification('❌ 수확 가능한 식물이 없습니다!');
+                return;
+            }
+
+            // 뒤에서부터 수확해야 인덱스 꼬임 방지 (harvestPlant 내부에서 splice를 쓰기 때문)
+            // 하지만 harvestPlant는 특정 인덱스를 지우므로, readyIndices를 뒤집어서 처리
+            readyIndices.reverse().forEach(index => {
+                harvestPlant(index);
+            });
+
+            showNotification(`✨ 총 ${readyIndices.length}개의 식물을 수확했습니다!`);
+        }
+
         // 식물 심기 메뉴
         function showPlantMenu() {
             gameState.currentManagedSlot = null;
@@ -3377,7 +3445,13 @@
             gameState.currentManagedSlot = null;
             const contentArea = document.getElementById('content-area');
             contentArea.innerHTML = `
-                <button class="back-button" onclick="showMainMenu()">← 뒤로 가기</button>
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                    <button class="back-button" onclick="showMainMenu()" style="margin: 0;">← 뒤로 가기</button>
+                    <button onclick="sellAllHarvestedPlants()" 
+                            style="background: #FFD700; color: #000; border: none; padding: 8px 16px; border-radius: 10px; font-weight: 800; cursor: pointer;">
+                        💰 전체 판매
+                    </button>
+                </div>
                 <h2>📦 인벤토리</h2>
                 <br>
                 <div id="inventory-content"></div>
@@ -4484,8 +4558,19 @@
         // 암시장 렌더링
         function renderBlackMarket() {
             const container = document.getElementById('black-market-items');
-            if (!container || !gameState.blackMarket.items.length) {
-                container.innerHTML = '<p>판매 중인 물건이 없습니다.</p>';
+            if (!container) return;
+
+            // 모든 아이템을 다 샀을 때의 문구 처리 (사용자 요청)
+            if (!gameState.blackMarket.items.length) {
+                container.innerHTML = `
+                    <div style="text-align: center; padding: 40px; color: #e74c3c;">
+                        <p style="font-size: 24px; margin-bottom: 10px;">👺</p>
+                        <p style="font-size: 18px; font-weight: bold; font-family: 'Courier New', serif;">"후후... 오늘은 물건이 이게 끝이야. 내일 다시 오라고."</p>
+                    </div>
+                `;
+                
+                // 가짜 뉴스 배포권 사용 UI는 매진되어도 보유 중이면 표시
+                renderFakeNewsUsageUI(container);
                 return;
             }
 
@@ -4540,7 +4625,11 @@
             html += '</table>';
             container.innerHTML = html;
             
-            // 가짜 뉴스 배포권 사용 UI (보유 시 표시)
+            renderFakeNewsUsageUI(container);
+        }
+
+        // 가짜 뉴스 사용 UI 분리 렌더링
+        function renderFakeNewsUsageUI(container) {
             if (gameState.fakeNewsCount > 0) {
                 const fakeNewsDiv = document.createElement('div');
                 fakeNewsDiv.style.cssText = 'margin-top: 20px; padding: 15px; background: rgba(231,76,60,0.15); border: 1px solid #e74c3c; border-radius: 10px;';
@@ -4566,6 +4655,19 @@
                 showNotification('❌ 가짜 뉴스 배포권이 없습니다!');
                 return;
             }
+
+            // 중복 사용 방지 (이미 내일 적용될 뉴스나 이벤트가 있는지 확인)
+            const isAlreadyScheduled = gameState.upcomingNews.some(news => 
+                news.effectiveDay === gameState.day + 1 && news.title.includes(plants.find(p => p.id === plantId)?.name)
+            ) || gameState.activeEvents.some(event => 
+                event.startDay === gameState.day + 1 && event.affectedPlants.includes(plantId)
+            );
+
+            if (isAlreadyScheduled) {
+                showNotification('❌ 이미 해당 작물에 대한 뉴스가 내일 예정되어 있습니다!');
+                return;
+            }
+
             const plant = plants.find(p => p.id === plantId);
             if (!plant) return;
 
@@ -4604,14 +4706,20 @@
 
         // 암시장 아이템 구매
         function buyBlackMarketItem(index) {
+            if (!gameState.blackMarket || !gameState.blackMarket.items) return;
+            
             const item = gameState.blackMarket.items[index];
-            if (gameState.gold < item.price) {
+            if (!item) return;
+
+            const price = item.price || 0;
+            if (gameState.gold < price) {
                 showNotification('❌ 골드가 부족합니다!');
                 return;
             }
 
-            gameState.gold -= item.price;
+            gameState.gold -= price;
             
+            try {
             // 특별 아이템 구매
             switch(item.type) {
                 case 'exclusive_seed':
@@ -4675,6 +4783,10 @@
             updateDisplay();
             renderBlackMarket();
             saveGameState();
+        } catch (e) {
+            console.error("Black market purchase error:", e);
+            showNotification("❌ 구매 중 오류가 발생했습니다.");
+        }
         }
 
         // 암시장 아이템 생성
@@ -4695,7 +4807,7 @@
             const templates = [
                 {
                     type: 'exclusive_seed',
-                    weight: 30,
+                    weight: 15,
                     description: '암시장에서만 구할 수 있는 전설적인 식물의 씨앗입니다.',
                     getPrice: (p) => {
                         const buyPrice = getCurrentBuyPrice(p);
@@ -4706,7 +4818,7 @@
                 },
                 {
                     type: 'locked_seed',
-                    weight: 40,
+                    weight: 35,
                     description: '아직 해금되지 않은 희귀 식물의 씨앗입니다. 레벨 제한 없이 심을 수 있습니다.',
                     getPrice: (p) => {
                         const buyPrice = getCurrentBuyPrice(p);
@@ -4715,20 +4827,12 @@
                         return Math.floor(buyPrice + (sellPrice - buyPrice) * 0.85);
                     }
                 },
-                {
-                    type: 'super_gear',
-                    gearId: 'magic_elixir',
-                    name: '🧪 만능 영양 엘릭서',
-                    emoji: '🧪',
-                    weight: 15,
-                    description: '성장 시간을 80% 즉시 단축시키는 강력한 약물입니다.',
-                    price: 800
-                },
+               
                 {
                     type: 'fake_news',
                     name: '📢 가짜 뉴스 배포권',
                     emoji: '📰',
-                    weight: 25,
+                    weight: 10,
                     description: '사용 시 내일 발생할 뉴스를 직접 선택할 수 있습니다. 시세 차익을 노리세요.',
                     price: Math.floor(1500 + Math.random() * 1500)
                 },
@@ -4743,7 +4847,7 @@
             ];
 
             const selectedItems = [];
-            const itemCount = 4; // 4개로 확장
+            const itemCount = 2; // 최대 2개
 
             for (let i = 0; i < itemCount; i++) {
                 const totalWeight = templates.reduce((sum, t) => sum + t.weight, 0);
@@ -4761,7 +4865,9 @@
                 let item = { ...selectedTemplate };
 
                 if (item.type === 'exclusive_seed') {
-                    if (exclusivePlants.length === 0) { i--; continue; }
+                    if (exclusivePlants.length === 0) {
+                        i--; continue;
+                    }
                     const plant = exclusivePlants[Math.floor(Math.random() * exclusivePlants.length)];
                     item.name = `📦 암시장 전용: ${plant.name} 씨앗`;
                     item.emoji = plant.emoji;
@@ -4769,13 +4875,18 @@
                     item.price = item.getPrice(plant);
                     item.isSeed = true;
                 } else if (item.type === 'locked_seed') {
-                    if (lockedPlants.length === 0) { i--; continue; }
+                    if (lockedPlants.length === 0) {
+                        i--; continue;
+                    }
                     const plant = lockedPlants[Math.floor(Math.random() * lockedPlants.length)];
                     item.name = `📦 밀수된 ${plant.name} 씨앗`;
                     item.emoji = plant.emoji;
                     item.plantId = plant.id;
                     item.price = item.getPrice(plant);
                     item.isSeed = true;
+                } else if (item.getPrice) {
+                    // 동적 가격 책정 (exp_boost 등)
+                    item.price = item.getPrice();
                 }
 
                 // 중복 방지
@@ -4786,6 +4897,12 @@
                 if (isDuplicate) { i--; continue; }
 
                 selectedItems.push(item);
+            }
+
+            // 활성화되었는데 아이템이 하나도 없다면 강제로 하나 추가 (안전 장치)
+            if (selectedItems.length === 0) {
+                const safeTemplate = templates.find(t => t.type === 'super_gear') || templates[2];
+                selectedItems.push({ ...safeTemplate });
             }
 
             gameState.blackMarket.items = selectedItems;
