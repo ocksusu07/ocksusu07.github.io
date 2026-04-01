@@ -73,12 +73,12 @@
         }
 
         .container {
-            max-width: 1500px;
+            max-width: 1200px; /* 27인치 표준 해상도 최적화 (1500px -> 1200px) */
             width: 95%;
             margin: 0 auto;
             border-radius: 20px;
             padding: 20px;
-            background: rgba(255, 255, 255, 0.35); /* 가독성을 위해 불투명도 약간 상승 */
+            background: rgba(255, 255, 255, 0.35);
             backdrop-filter: blur(20px);
             border: 1px solid rgba(255, 255, 255, 0.4);
             box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
@@ -598,21 +598,22 @@
         }
 
         .left-sidebar {
-            left: calc(50% - 750px - 135px); /* 메인 컨테이너(1500px) 바로 옆에 밀착 */
+            left: calc(50% - 600px - 135px); /* 1200px 컨테이너 기준 */
         }
 
         .right-sidebar {
-            right: calc(50% - 750px - 135px); /* 메인 컨테이너(1500px) 바로 옆에 밀착 */
+            right: calc(50% - 600px - 135px); /* 1200px 컨테이너 기준 */
         }
 
-        /* 화면이 작아질 때 사이드바 위치 조정 */
-        @media (max-width: 1800px) {
-            .left-sidebar {
-                left: 10px;
-            }
-            .right-sidebar {
-                right: 10px;
-            }
+        /* 해상도별 사이드바 위치 조정 */
+        @media (max-width: 1750px) {
+            .left-sidebar { left: 240px; }
+            .right-sidebar { right: 20px; }
+        }
+
+        @media (max-width: 1450px) {
+            .left-sidebar { left: 10px; }
+            .right-sidebar { right: 10px; }
         }
 
         .menu-card {
@@ -1512,17 +1513,26 @@
         /* 랭킹 시스템 스타일 */
         .global-ranking-board {
             position: fixed;
-            top: 40%; /* 위쪽으로 이동 (50% -> 40%) */
+            top: 40%;
             transform: translateY(-50%);
-            left: calc(50% - 750px - 135px - 300px); /* 왼쪽으로 더 이동 (-260px -> -300px) */
+            left: calc(50% - 600px - 135px - 260px); /* 1200px 컨테이너 기준 */
             width: 240px;
             z-index: 999;
             transition: all 0.3s ease;
         }
 
-        @media (max-width: 1800px) {
+        @media (max-width: 1750px) {
             .global-ranking-board {
-                left: -250px; /* 화면이 작아지면 일단 숨김 (클릭으로 열기 등 추가 가능하지만 여기선 일단 숨김) */
+                left: 20px; /* 화면이 좁아지면 왼쪽 끝 고정 */
+                top: 20px;
+                transform: none;
+                width: 200px;
+            }
+        }
+
+        @media (max-width: 1450px) {
+            .global-ranking-board {
+                display: none; /* 해상도가 너무 낮으면 숨김 */
             }
         }
 
