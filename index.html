@@ -196,24 +196,65 @@
             font-weight: 900;
             border: none;
             cursor: pointer;
-            background: linear-gradient(135deg, #2ecc71, #27ae60);
-            color: white;
+            background: linear-gradient(135deg, #2ecc71, #27ae60); /* 배경색 초록 그라데이션 원복 */
+            color: #000000 !important; /* 글씨색 검정으로 변경 */
+            text-shadow: 0 1px 1px rgba(255,255,255,0.3); /* 밝은 배경에 어울리는 그림자 */
             transition: transform 0.08s ease, opacity 0.2s ease;
         }
         .seed-card-buy:active {
             transform: translateY(1px);
         }
         .seed-card-buy[disabled] {
-            opacity: 0.5;
+            opacity: 0.4;
             cursor: not-allowed;
             transform: none;
+            color: rgba(0, 0, 0, 0.5) !important;
         }
         .seed-card-locked {
             opacity: 0.75;
         }
         .seed-card-locked .seed-card-buy {
-            background: linear-gradient(135deg, #7f8c8d, #95a5a6);
+            background: linear-gradient(135deg, #7f8c8d, #95a5a6); /* 잠금 상태 원복 */
         }
+
+        /* 공통 상점 구매 버튼 스타일 */
+        .shop-buy-btn {
+            background: linear-gradient(135deg, #3498db, #2980b9) !important; /* 배경색 파랑 그라데이션 원복 */
+            color: #000000 !important; /* 글씨색 검정으로 변경 */
+            border: none !important;
+            padding: 8px 16px;
+            border-radius: 10px;
+            font-weight: 800;
+            text-shadow: 0 1px 1px rgba(255,255,255,0.3);
+            transition: all 0.2s ease;
+        }
+        .shop-buy-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+        }
+        .shop-buy-btn:disabled {
+             background: #95a5a6 !important;
+             opacity: 0.6;
+             cursor: not-allowed;
+             transform: none;
+         }
+ 
+         /* 판매 버튼 스타일 */
+         .shop-sell-btn {
+             background: linear-gradient(135deg, #e67e22, #d35400) !important;
+             color: #ffffff !important;
+             border: none !important;
+             padding: 6px 12px;
+             border-radius: 8px;
+             font-weight: 800;
+             text-shadow: 0 1px 2px rgba(0,0,0,0.2);
+             cursor: pointer;
+             transition: all 0.2s ease;
+         }
+         .shop-sell-btn:hover {
+             transform: translateY(-1px);
+             box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+         }
 
         /* 카드 내 기존 table trend 색상을 그대로 활용 */
         .seed-card .trend-up { color: #27ae60; font-weight: 900; }
@@ -3211,7 +3252,7 @@
                             <td>${qualityLabel(quality)}</td>
                             <td>💎 ${eventPrice}${eventBonusText}</td>
                             <td>💎 ${Math.floor(buyPrice)}</td>
-                            <td><button onclick="sellPlant('${plantId}', '${quality}', '${encodedEffect}')">판매</button></td>
+                            <td><button class="shop-sell-btn" onclick="sellPlant('${plantId}', '${quality}', '${encodedEffect}')">판매</button></td>
                         </tr>
                     `;
                 });
@@ -4001,7 +4042,7 @@
                         <td>${gear.name}</td>
                         <td>💎 ${gear.price}</td>
                         <td>${gear.effect}</td>
-                        <td><button onclick="buyGear('${gear.id}')" ${gameState.gold < gear.price ? 'disabled' : ''}>구매</button></td>
+                        <td><button class="shop-buy-btn" onclick="buyGear('${gear.id}')" ${gameState.gold < gear.price ? 'disabled' : ''}>구매</button></td>
                     </tr>
                 `;
             });
@@ -4075,7 +4116,7 @@
                 <div class="slot-purchase">
                     <h3>슬롯 구매</h3>
                     <p>추가 슬롯 1개: 💎 ${nextSlotCost}</p>
-                    <button onclick="buySlot()" ${gameState.gold < nextSlotCost ? 'disabled' : ''}>슬롯 구매</button>
+                    <button class="shop-buy-btn" onclick="buySlot()" ${gameState.gold < nextSlotCost ? 'disabled' : ''}>슬롯 구매</button>
                 </div>
             `;
             
@@ -4162,7 +4203,7 @@
                         <td>${lv} / ${up.maxLevel}</td>
                         <td>${up.effect(lv)}</td>
                         <td>${isMax ? '-' : '💎 ' + cost}</td>
-                        <td><button onclick="buyUpgrade('${up.id}', ${cost})" ${isMax || gameState.gold < cost ? 'disabled' : ''}>${isMax ? '최대 레벨' : '강화'}</button></td>
+                        <td><button class="shop-buy-btn" onclick="buyUpgrade('${up.id}', ${cost})" ${isMax || gameState.gold < cost ? 'disabled' : ''}>${isMax ? '최대 레벨' : '강화'}</button></td>
                     </tr>
                 `;
             });
@@ -4250,7 +4291,7 @@
                         <td style="color: #f1c40f; font-weight: bold;">💎 ${item.price}</td>
                         <td>
                             <button onclick="buyBlackMarketItem(${index})" 
-                                    style="background: #e74c3c; color: #fff; border: none;"
+                                    style="background: #e74c3c; color: #fff; border: none; padding: 8px 16px; border-radius: 10px; font-weight: 800; cursor: pointer;"
                                     ${gameState.gold < item.price ? 'disabled' : ''}>
                                 구매
                             </button>
