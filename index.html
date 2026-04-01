@@ -591,46 +591,43 @@
             transform: translateY(-50%);
             display: flex;
             flex-direction: column;
-            gap: 10px;
-            width: 140px;
+            gap: 8px; /* 버튼 간격 축소 */
+            width: 120px; /* 사이드바 너비 축소 */
             z-index: 1000;
+            transition: all 0.3s ease;
         }
 
         .left-sidebar {
-            left: 15px;
+            left: calc(50% - 750px - 135px); /* 메인 컨테이너(1500px) 바로 옆에 밀착 */
         }
 
         .right-sidebar {
-            right: 15px;
+            right: calc(50% - 750px - 135px); /* 메인 컨테이너(1500px) 바로 옆에 밀착 */
+        }
+
+        /* 화면이 작아질 때 사이드바 위치 조정 */
+        @media (max-width: 1800px) {
+            .left-sidebar {
+                left: 10px;
+            }
+            .right-sidebar {
+                right: 10px;
+            }
         }
 
         .menu-card {
-            background: rgba(255, 255, 255, 0.1);
-            border-radius: 12px;
-            padding: 12px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 15px; /* 조금 더 각진 느낌으로 변경 */
+            padding: 15px 10px; /* 패딩 대폭 축소 */
             text-align: center;
             cursor: pointer;
-            transition: all 0.3s ease;
-            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
+            transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
             border: 1px solid rgba(255, 255, 255, 0.2);
             position: relative;
             overflow: hidden;
             backdrop-filter: blur(10px);
             width: 100%;
-        }
-
-        .menu-card {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            border-radius: 20px;
-            padding: 25px;
-            text-align: center;
-            cursor: pointer;
-            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
-            border: 1px solid rgba(255, 255, 255, 0.2);
-            position: relative;
-            overflow: hidden;
-            backdrop-filter: blur(10px);
         }
 
         .menu-card::before {
@@ -726,8 +723,8 @@
 
         .shop-menu {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-            gap: 20px;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); /* 너비 소폭 축소 */
+            gap: 12px; /* 간격 축소 (20px -> 12px) */
             margin-bottom: 25px;
         }
 
@@ -1512,11 +1509,137 @@
             /* 배경색이 확 밝아지는게 싫다면 아래 줄도 주석을 푸세요 */
             /* background: inherit !important; */ 
         }
+        /* 랭킹 시스템 스타일 */
+        .global-ranking-board {
+            position: fixed;
+            top: 40%; /* 위쪽으로 이동 (50% -> 40%) */
+            transform: translateY(-50%);
+            left: calc(50% - 750px - 135px - 300px); /* 왼쪽으로 더 이동 (-260px -> -300px) */
+            width: 240px;
+            z-index: 999;
+            transition: all 0.3s ease;
+        }
+
+        @media (max-width: 1800px) {
+            .global-ranking-board {
+                left: -250px; /* 화면이 작아지면 일단 숨김 (클릭으로 열기 등 추가 가능하지만 여기선 일단 숨김) */
+            }
+        }
+
+        .ranking-container {
+            background: rgba(0, 0, 0, 0.6);
+            backdrop-filter: blur(15px);
+            border-radius: 15px;
+            padding: 18px;
+            border: 1px solid rgba(255, 215, 0, 0.3);
+            color: #fff;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+        }
+        .ranking-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+            border-bottom: 2px solid rgba(255, 215, 0, 0.5);
+            padding-bottom: 10px;
+        }
+        .ranking-list {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+        .ranking-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            transition: background 0.2s;
+        }
+        .ranking-item:hover {
+            background: rgba(255, 255, 255, 0.05);
+        }
+        .ranking-rank {
+            font-weight: bold;
+            width: 30px;
+        }
+        .ranking-info {
+            flex-grow: 1;
+            display: flex;
+            justify-content: space-between;
+            padding-left: 10px;
+        }
+        .ranking-nickname {
+            font-weight: bold;
+            color: #FFD700;
+        }
+        .ranking-stats {
+            font-size: 0.9em;
+            color: #ccc;
+        }
+        .toggle-btn {
+            background: none;
+            border: none;
+            color: #FFD700;
+            cursor: pointer;
+            font-size: 1.2em;
+            padding: 5px;
+        }
+        .register-btn {
+            background: #FFD700;
+            color: #000;
+            border: none;
+            padding: 8px 15px;
+            border-radius: 5px;
+            font-weight: bold;
+            cursor: pointer;
+            margin-top: 15px;
+            width: 100%;
+            transition: background 0.2s;
+        }
+        .register-btn:hover {
+            background: #FFC800;
+        }
+
+        .news-history-container {
+            display: flex;
+            gap: 20px;
+            align-items: flex-start;
+        }
+        .news-section {
+            flex: 1;
+        }
+        .ranking-section {
+            flex: 1;
+        }
+
+        @media (max-width: 768px) {
+            .news-history-container {
+                flex-direction: column;
+            }
+            .news-section, .ranking-section {
+                width: 100%;
+            }
+        }
     </style>
 </head>
 <body>
     <!-- 알림 컨테이너 -->
     <div id="notification-container"></div>
+
+    <!-- 좌측 랭킹 보드 -->
+    <div class="global-ranking-board">
+        <div class="ranking-container">
+            <div class="ranking-header">
+                <h2 style="margin: 0; font-size: 20px; color: #FFD700;">🏆 명예의 전당</h2>
+                <button class="toggle-btn" onclick="toggleRanking()"><span id="ranking-toggle-icon">▼</span></button>
+            </div>
+            <ul id="ranking-list" class="ranking-list">
+                <li class="ranking-item" style="justify-content: center;">불러오는 중...</li>
+            </ul>
+            <button class="register-btn" onclick="registerRanking()">📋 내 기록 등록하기</button>
+        </div>
+    </div>
 
     <!-- 좌측 사이드바 -->
     <div class="left-sidebar">
@@ -2198,6 +2321,9 @@
             
             // 초기 저장
             saveGameState();
+            
+            // 랭킹 초기 업데이트
+            updateRankingDisplay();
         }
 
         // 게임 상태 저장 (강화된 버전)
@@ -5277,6 +5403,95 @@
             growthStatus.innerHTML = html;
         }
 
+        let isRankingExpanded = false; // 랭킹 확장 여부
+
+        // 랭킹 등록
+        function registerRanking() {
+            let nickname = prompt("랭킹에 등록할 닉네임을 입력하세요 (최대 8자):", "");
+            if (nickname === null) return; // 취소 버튼
+            
+            nickname = nickname.trim().substring(0, 8);
+            if (nickname === "") {
+                showNotification("❌ 닉네임을 입력해주세요.");
+                return;
+            }
+
+            const rankingData = {
+                level: gameState.level,
+                gold: gameState.gold,
+                timestamp: Date.now()
+            };
+
+            database.ref('rankings/' + nickname).set(rankingData)
+                .then(() => {
+                    showNotification("🏆 랭킹에 성공적으로 등록되었습니다!");
+                    if (document.getElementById('ranking-list')) {
+                        updateRankingDisplay();
+                    }
+                })
+                .catch((error) => {
+                    console.error("랭킹 등록 실패:", error);
+                    showNotification("❌ 랭킹 등록에 실패했습니다.");
+                });
+        }
+
+        // 랭킹 표시 업데이트
+        function updateRankingDisplay() {
+            const rankingList = document.getElementById('ranking-list');
+            if (!rankingList) return;
+
+            const limit = isRankingExpanded ? 10 : 5;
+            
+            database.ref('rankings').orderByChild('level').limitToLast(limit).once('value', (snapshot) => {
+                let items = [];
+                snapshot.forEach((childSnapshot) => {
+                    items.push({
+                        nickname: childSnapshot.key,
+                        ...childSnapshot.val()
+                    });
+                });
+                
+                // 내림차순 정렬 (level 높은 순, 같으면 gold 많은 순)
+                items.sort((a, b) => {
+                    if (b.level !== a.level) return b.level - a.level;
+                    return b.gold - a.gold;
+                });
+
+                let html = '';
+                items.forEach((item, index) => {
+                    let rankEmoji = '';
+                    if (index === 0) rankEmoji = '🥇';
+                    else if (index === 1) rankEmoji = '🥈';
+                    else if (index === 2) rankEmoji = '🥉';
+                    else rankEmoji = `${index + 1}.`;
+
+                    html += `
+                        <li class="ranking-item">
+                            <span class="ranking-rank">${rankEmoji}</span>
+                            <div class="ranking-info">
+                                <span class="ranking-nickname">${item.nickname}</span>
+                                <span class="ranking-stats">Lv.${item.level} | 💎 ${item.gold.toLocaleString()}</span>
+                            </div>
+                        </li>
+                    `;
+                });
+
+                if (items.length === 0) {
+                    html = '<li class="ranking-item" style="justify-content: center; color: #888;">등록된 랭킹이 없습니다.</li>';
+                }
+
+                rankingList.innerHTML = html;
+                const toggleIcon = document.getElementById('ranking-toggle-icon');
+                if (toggleIcon) toggleIcon.textContent = isRankingExpanded ? '▲' : '▼';
+            });
+        }
+
+        // 랭킹 토글
+        function toggleRanking() {
+            isRankingExpanded = !isRankingExpanded;
+            updateRankingDisplay();
+        }
+
         // 뉴스 이력 보기 (디자인 개선)
         function showNewsHistory() {
             gameState.currentManagedSlot = null;
@@ -5296,50 +5511,44 @@
                     <div style="text-align: center; padding: 40px; background: rgba(255,255,255,0.05); border-radius: 15px; border: 1px dashed rgba(255,255,255,0.2);">
                         <p style="color: #888; font-size: 16px;">아직 기록된 뉴스가 없습니다.</p>
                     </div>`;
-                return;
-            }
-            
-            let html = '';
-            gameState.newsHistory.forEach(item => {
-                const isUpcoming = item.effectiveDay > gameState.day;
-                const isActive = item.effectiveDay === gameState.day;
-                const isPast = item.effectiveDay < gameState.day;
-                
-                // 뉴스 성격에 따른 테두리 색상 (가격 상승: 초록, 하락: 빨강)
-                const isHike = item.effect && item.effect.isPriceHike;
-                const accentColor = isHike ? '#2ecc71' : '#e74c3c';
-                
-                let statusBadge = '';
-                if (isUpcoming) {
-                    statusBadge = `<span style="background: #f39c12; color: white; padding: 3px 10px; border-radius: 20px; font-size: 11px; font-weight: bold; box-shadow: 0 2px 4px rgba(0,0,0,0.2);">내일 적용</span>`;
-                } else if (isActive) {
-                    statusBadge = `<span style="background: #27ae60; color: white; padding: 3px 10px; border-radius: 20px; font-size: 11px; font-weight: bold; box-shadow: 0 2px 4px rgba(0,0,0,0.2);">현재 활성</span>`;
-                } else {
-                    statusBadge = `<span style="background: rgba(255,255,255,0.2); color: #aaa; padding: 3px 10px; border-radius: 20px; font-size: 11px; font-weight: bold;">기록됨</span>`;
-                }
+            } else {
+                let html = '';
+                // 최신순으로 정렬하여 표시
+                [...gameState.newsHistory].reverse().forEach(item => {
+                    const isUpcoming = item.effectiveDay > gameState.day;
+                    const isActive = item.effectiveDay === gameState.day;
+                    
+                    const isHike = item.effect && item.effect.isPriceHike;
+                    const accentColor = isHike ? '#2ecc71' : '#e74c3c';
+                    
+                    let statusBadge = '';
+                    if (isUpcoming) {
+                        statusBadge = `<span style="background: #f39c12; color: white; padding: 3px 10px; border-radius: 20px; font-size: 11px; font-weight: bold; box-shadow: 0 2px 4px rgba(0,0,0,0.2);">내일 적용</span>`;
+                    } else if (isActive) {
+                        statusBadge = `<span style="background: #27ae60; color: white; padding: 3px 10px; border-radius: 20px; font-size: 11px; font-weight: bold; box-shadow: 0 2px 4px rgba(0,0,0,0.2);">현재 활성</span>`;
+                    } else {
+                        statusBadge = `<span style="background: rgba(255,255,255,0.2); color: #aaa; padding: 3px 10px; border-radius: 20px; font-size: 11px; font-weight: bold;">기록됨</span>`;
+                    }
 
-                html += `
-                    <div style="background: rgba(20, 20, 20, 0.4); padding: 20px; border-radius: 15px; border-left: 6px solid ${accentColor}; position: relative; overflow: hidden; backdrop-filter: blur(10px); box-shadow: 0 4px 15px rgba(0,0,0,0.1); border-top: 1px solid rgba(255,255,255,0.05); border-right: 1px solid rgba(255,255,255,0.05); border-bottom: 1px solid rgba(255,255,255,0.05);">
-                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
-                            <span style="font-size: 12px; color: #888; font-weight: bold; letter-spacing: 1px;">DAY ${item.day} EDITION</span>
-                            ${statusBadge}
+                    html += `
+                        <div style="background: rgba(20, 20, 20, 0.4); padding: 20px; border-radius: 15px; border-left: 6px solid ${accentColor}; position: relative; overflow: hidden; backdrop-filter: blur(10px); box-shadow: 0 4px 15px rgba(0,0,0,0.1); border: 1px solid rgba(255,255,255,0.05);">
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+                                <span style="font-size: 12px; color: #888; font-weight: bold; letter-spacing: 1px;">DAY ${item.day} EDITION</span>
+                                ${statusBadge}
+                            </div>
+                            <h3 style="margin: 0 0 10px 0; color: #fff; font-size: 18px; line-height: 1.4;">${item.title}</h3>
+                            <p style="font-size: 14px; color: #ccc; line-height: 1.6; margin-bottom: 12px; font-family: 'Courier New', serif;">"${item.content}"</p>
+                            <div style="display: flex; justify-content: space-between; align-items: center; padding-top: 10px; border-top: 1px solid rgba(255,255,255,0.1);">
+                                <span style="color: ${accentColor}; font-size: 13px; font-weight: bold;">
+                                    ${isHike ? '📈 시장 가치 상승' : '📉 가치 하락'}
+                                </span>
+                                <small style="color: #666; font-size: 11px;">적용일: Day ${item.effectiveDay}</small>
+                            </div>
                         </div>
-                        <h3 style="margin: 0 0 10px 0; color: #fff; font-size: 18px; line-height: 1.4;">${item.title}</h3>
-                        <p style="font-size: 15px; color: #ccc; line-height: 1.6; margin-bottom: 15px; font-family: 'Courier New', serif;">"${item.content}"</p>
-                        <div style="display: flex; justify-content: space-between; align-items: center; padding-top: 12px; border-top: 1px solid rgba(255,255,255,0.1);">
-                            <span style="color: ${accentColor}; font-size: 13px; font-weight: bold;">
-                                ${isHike ? '📈 시장 가치 상승' : '📉 공급량 증가 / 가치 하락'}
-                            </span>
-                            <small style="color: #666; font-size: 11px;">적용일: Day ${item.effectiveDay}</small>
-                        </div>
-                        <!-- 워터마크 효과 -->
-                        <div style="position: absolute; right: -10px; bottom: -10px; font-size: 60px; opacity: 0.05; pointer-events: none; transform: rotate(-15deg); color: white;">
-                            🗞️
-                        </div>
-                    </div>
-                `;
-            });
-            list.innerHTML = html;
+                    `;
+                });
+                list.innerHTML = html;
+            }
         }
 
         // 메인 메뉴 표시
