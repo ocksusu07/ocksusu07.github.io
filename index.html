@@ -4791,8 +4791,8 @@
 
         // 암시장 아이템 생성
         function generateBlackMarket() {
-            // 20% 확률로 활성화 (사용자 요청에 맞춰 상향 조정)
-            if (Math.random() > 0.05) {
+            // 8.5% 확률로 활성화 (사용자 요청에 맞춰 상향 조정)
+            if (Math.random() > 0.85) {
                 gameState.blackMarket.active = false;
                 gameState.blackMarket.items = [];
                 return;
