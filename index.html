@@ -1513,20 +1513,20 @@
         /* 랭킹 시스템 스타일 */
         .global-ranking-board {
             position: fixed;
-            top: 40%;
+            top: 35%; /* 조금 더 위쪽으로 */
             transform: translateY(-50%);
-            left: calc(50% - 600px - 135px - 260px); /* 1200px 컨테이너 기준 */
-            width: 240px;
+            left: calc(50% - 600px - 135px - 320px); /* 1200px 컨테이너 기준, 왼쪽으로 조금 더 이동 (-260px -> -320px) */
+            width: 280px; /* 전당 컨테이너 가로 크기 늘림 (240px -> 280px) */
             z-index: 999;
             transition: all 0.3s ease;
         }
 
         @media (max-width: 1750px) {
             .global-ranking-board {
-                left: 20px; /* 화면이 좁아지면 왼쪽 끝 고정 */
-                top: 20px;
+                left: 10px; /* 왼쪽으로 조금 더 이동 (20px -> 10px) */
+                top: 15px; /* 조금 더 위쪽으로 (20px -> 15px) */
                 transform: none;
-                width: 200px;
+                width: 240px; /* 너비 조금 더 늘림 (200px -> 240px) */
             }
         }
 
@@ -1641,7 +1641,7 @@
     <div class="global-ranking-board">
         <div class="ranking-container">
             <div class="ranking-header">
-                <h2 style="margin: 0; font-size: 20px; color: #FFD700;">🏆 명예의 전당</h2>
+                <h2 style="margin: 0; font-size: 16px; color: #FFD700;">🏆 명예의 전당</h2>
                 <button class="toggle-btn" onclick="toggleRanking()"><span id="ranking-toggle-icon">▼</span></button>
             </div>
             <ul id="ranking-list" class="ranking-list">
@@ -1853,7 +1853,8 @@
             quests: [], // 활성 퀘스트 목록
             weatherLock: null, // 날씨 고정 정보 { weather: '🌈', endDay: 5 }
             currentManagedSlot: null, // 현재 관리 중인 슬롯 인덱스
-            nickname: null // 유저 닉네임 (최초 1회 설정)
+            nickname: null, // 유저 닉네임
+            playerId: 'player_' + Math.random().toString(36).substr(2, 9) + Date.now().toString(36) // 고유 플레이어 ID
         };
 
         // 마법 식물 데이터
@@ -5418,30 +5419,37 @@
 
         // 랭킹 등록
         function registerRanking() {
-            let nickname = gameState.nickname;
+            // 항상 닉네임을 새로 확인받음 (기존 닉네임이 있으면 기본값으로 제공)
+            let currentNickname = gameState.nickname || "";
+            let nickname = prompt("랭킹에 사용할 닉네임을 입력하세요 (최대 8자):", currentNickname);
             
-            // 닉네임이 없으면 새로 입력받음
-            if (!nickname) {
-                nickname = prompt("랭킹에 사용할 닉네임을 입력하세요 (최대 8자, 이후 자동 사용):", "");
-                if (nickname === null) return; // 취소 버튼
-                
-                nickname = nickname.trim().substring(0, 8);
-                if (nickname === "") {
-                    showNotification("❌ 닉네임을 입력해주세요.");
-                    return;
-                }
-                
-                gameState.nickname = nickname;
-                saveGameState(); // 닉네임 저장
+            if (nickname === null) return; // 취소 버튼
+            
+            nickname = nickname.trim().substring(0, 8);
+            if (nickname === "") {
+                showNotification("❌ 닉네임을 입력해주세요.");
+                return;
             }
+            
+            // 닉네임 저장
+            gameState.nickname = nickname;
+            
+            // 플레이어 ID가 없으면 생성 (마이그레이션 대응)
+            if (!gameState.playerId) {
+                gameState.playerId = 'player_' + Math.random().toString(36).substr(2, 9) + Date.now().toString(36);
+            }
+            
+            saveGameState(); 
 
             const rankingData = {
+                nickname: nickname, // 닉네임을 데이터 필드로 저장
                 level: gameState.level,
                 gold: gameState.gold,
                 timestamp: Date.now()
             };
 
-            database.ref('rankings/' + nickname).set(rankingData)
+            // playerId를 키로 사용하여 등록 (이름이 바뀌어도 자동으로 같은 플레이어의 기록이 치환됨)
+            database.ref('rankings/' + gameState.playerId).set(rankingData)
                 .then(() => {
                     showNotification(`🏆 [${nickname}]님의 기록이 갱신되었습니다!`);
                     if (document.getElementById('ranking-list')) {
@@ -5464,9 +5472,11 @@
             database.ref('rankings').orderByChild('level').limitToLast(limit).once('value', (snapshot) => {
                 let items = [];
                 snapshot.forEach((childSnapshot) => {
+                    const data = childSnapshot.val();
                     items.push({
-                        nickname: childSnapshot.key,
-                        ...childSnapshot.val()
+                        // 구버전(키가 닉네임인 경우)과 신버전(데이터에 nickname 필드가 있는 경우) 모두 대응
+                        nickname: data.nickname || childSnapshot.key,
+                        ...data
                     });
                 });
                 
