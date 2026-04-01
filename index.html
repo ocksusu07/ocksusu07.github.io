@@ -91,13 +91,13 @@
             border-collapse: collapse;
             margin-top: 10px;
             table-layout: auto;
-            font-size: 0.9em; /* 조금 더 작게 조정 */
+            font-size: 14px; /* 0.9em에서 14px로 상향 */
         }
 
         th, td {
-            padding: 10px 6px; /* 패딩 최적화 */
+            padding: 12px 8px; /* 패딩 약간 확대 */
             text-align: left;
-            border-bottom: 1px solid rgba(0, 0, 0, 0.1); /* 고정 색상 대신 투명도 사용 */
+            border-bottom: 1px solid rgba(0, 0, 0, 0.1);
             white-space: nowrap;
         }
 
@@ -183,9 +183,10 @@
             font-weight: 800;
         }
         .seed-card-meta {
-            font-size: 12px;
-            opacity: 0.9;
-            line-height: 1.25;
+            font-size: 13px; /* 12px에서 13px로 상향 */
+            opacity: 1.0; /* 투명도 제거하여 더 선명하게 */
+            line-height: 1.4;
+            margin-top: 4px;
         }
         .seed-card-actions {
             margin-top: auto;
@@ -1638,6 +1639,27 @@
     <!-- 알림 컨테이너 -->
     <div id="notification-container"></div>
 
+    <!-- 닉네임 설정 모달 (커스텀) -->
+    <div id="nickname-modal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 10000; backdrop-filter: blur(10px); align-items: center; justify-content: center;">
+        <div style="background: rgba(255, 255, 255, 0.1); padding: 40px; border-radius: 25px; border: 1px solid rgba(255, 255, 255, 0.2); width: 400px; text-align: center; box-shadow: 0 20px 60px rgba(0,0,0,0.5); animation: modal-fade-in 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);">
+            <h2 style="color: #FFD700; margin-bottom: 15px; font-size: 24px;">🌿 관리자 등록</h2>
+            <p style="color: #ddd; margin-bottom: 25px; font-size: 14px; line-height: 1.6;">마법 온실에 오신 것을 환영합니다!<br>사용하실 관리자 이름을 입력해주세요.</p>
+            
+            <input type="text" id="nickname-input" maxlength="6" placeholder="이름 (최대 6자)" style="width: 100%; padding: 15px; border-radius: 12px; border: 1px solid rgba(255, 255, 255, 0.3); background: rgba(0,0,0,0.2); color: #fff; font-size: 18px; text-align: center; margin-bottom: 20px; outline: none; transition: border-color 0.3s;" onfocus="this.style.borderColor='#FFD700'" onblur="this.style.borderColor='rgba(255,255,255,0.3)'" onkeydown="if(event.key==='Enter') confirmNickname()">
+            
+            <button onclick="confirmNickname()" style="width: 100%; padding: 15px; border-radius: 12px; border: none; background: linear-gradient(135deg, #4CAF50, #81C784); color: white; font-size: 18px; font-weight: bold; cursor: pointer; transition: transform 0.2s, box-shadow 0.2s;" onmouseover="this.style.transform='scale(1.02)'; this.style.boxShadow='0 5px 15px rgba(76, 175, 80, 0.4)'" onmouseout="this.style.transform='scale(1)'; this.style.boxShadow='none'">시작하기</button>
+            
+            <p style="color: #888; margin-top: 15px; font-size: 11px;">※ 설정 후 변경이 불가능합니다.</p>
+        </div>
+    </div>
+
+    <style>
+        @keyframes modal-fade-in {
+            from { opacity: 0; transform: scale(0.8) translateY(-20px); }
+            to { opacity: 1; transform: scale(1) translateY(0); }
+        }
+    </style>
+
     <!-- 좌측 랭킹 보드 -->
     <div class="global-ranking-board">
         <div class="ranking-container">
@@ -2332,15 +2354,56 @@
             // 알림 권한 요청
             requestNotificationPermission();
             
+            // 닉네임이 없으면 입력을 받을 때까지 강제 (기존/신규 플레이어 공통)
+            if (!gameState.nickname) {
+                const modal = document.getElementById('nickname-modal');
+                if (modal) {
+                    modal.style.display = 'flex';
+                    // 약간의 지연 후 포커스 (애니메이션 고려)
+                    setTimeout(() => {
+                        const input = document.getElementById('nickname-input');
+                        if (input) input.focus();
+                    }, 500);
+                }
+            } else {
+                // 이미 닉네임이 있는 경우에도 초기 접속 시 파이어베이스 동기화 (플레이어 수 집계 목적)
+                syncUserWithFirebase(true);
+                // 랭킹 초기 업데이트
+                updateRankingDisplay();
+            }
+            
             // 초기 저장
             saveGameState();
-            
-            // 랭킹 초기 업데이트
-            updateRankingDisplay();
         }
+
+        // 닉네임 설정 확인 (커스텀 모달용)
+        function confirmNickname() {
+            const input = document.getElementById('nickname-input');
+            const nickname = input.value.trim();
+            
+            if (nickname) {
+                gameState.nickname = nickname.substring(0, 6);
+                const modal = document.getElementById('nickname-modal');
+                if (modal) modal.style.display = 'none';
+                
+                // 초기 닉네임 설정 후 저장 및 파이어베이스 동기화
+                saveGameState();
+                syncUserWithFirebase(true); // 조용히 등록
+                showNotification(`🌱 [${gameState.nickname}] 관리자님, 환영합니다!`);
+                
+                // 랭킹 업데이트
+                updateRankingDisplay();
+            } else {
+                showNotification("❌ 관리자 이름을 입력해주세요.");
+            }
+        }
+
+        let isResetting = false; // 리셋 중인지 여부 확인 (자동 저장 방지용)
 
         // 게임 상태 저장 (강화된 버전)
         function saveGameState() {
+            if (isResetting) return; // 리셋 중에는 저장하지 않음
+
             // 현재까지 진행된 시간을 저장하여 웹을 닫았다 열었을 때 이어서 흐르게 함 (사용자 요청)
             gameState.elapsedAutoProgress = Date.now() - gameState.lastAutoProgress;
             
@@ -3046,7 +3109,10 @@
             if (gameState.level === 30) {
                 showNotification('🏆 만렙(30) 달성을 축하합니다! 당신은 전설의 온실 관리자입니다!');
             }
-        }
+
+            // 레벨업 시 파이어베이스 유저 정보 자동 업데이트 (사용자 요청)
+             syncUserWithFirebase(true); // 조용히 업데이트
+         }
 
         // 품질 등급 정보 (B등급 1.0 기준 재조정 - 사용자 요청)
         const qualityGrades = {
@@ -3571,7 +3637,7 @@
                 // 이벤트 보너스 텍스트 생성 (사용자 요청)
                 let eventBonusText = '';
                 if (eventSellPrice > currentSellPrice) {
-                    eventBonusText = `<br><small style="color: #FF6B6B; font-weight: bold;">🎉 이벤트 보너스: +${eventSellPrice - currentSellPrice}</small>`;
+                    eventBonusText = `<br><span style="color: #FF6B6B; font-weight: 900; font-size: 14px; text-shadow: 0 0 5px rgba(255,107,107,0.3);">🎉 이벤트 보너스: +${eventSellPrice - currentSellPrice}</span>`;
                 }
 
                 // 어제 구매가격과 비교
@@ -3583,14 +3649,14 @@
                     const change = currentBuyPrice - yesterdayPrice;
                     const changePercent = Math.round((change / yesterdayPrice) * 100);
                     if (change > 0) {
-                        priceChangeText = `<span style="color: #27ae60; font-weight: bold;">+${change} (+${changePercent}%) 📈</span>`;
+                        priceChangeText = `<span style="color: #27ae60; font-weight: 900; font-size: 15px;">+${change} (+${changePercent}%) 📈</span>`;
                     } else if (change < 0) {
-                        priceChangeText = `<span style="color: #e74c3c; font-weight: bold;">${change} (${changePercent}%) 📉</span>`;
+                        priceChangeText = `<span style="color: #e74c3c; font-weight: 900; font-size: 15px;">${change} (${changePercent}%) 📉</span>`;
                     } else {
-                        priceChangeText = `<span style="color: #f39c12; font-weight: bold;">변화 없음 ➖</span>`;
+                        priceChangeText = `<span style="color: #f39c12; font-weight: 900; font-size: 15px;">변화 없음 ➖</span>`;
                     }
                 } else {
-                    priceChangeText = `<span style="color: #f39c12; font-weight: bold;">새로운 가격 ➖</span>`;
+                    priceChangeText = `<span style="color: #f39c12; font-weight: 900; font-size: 15px;">새로운 가격 ➖</span>`;
                 }
                 
                 // 재고 상태 표시
@@ -4061,56 +4127,33 @@
                                    `• 복구할 수 없습니다\n\n` +
                                    `계속하시려면 "삭제"라고 정확히 입력하세요.`);
             
-            if (userInput === '삭제') {
-                // 모든 저장된 데이터 삭제
+            // 공백 제거 및 확인
+            if (userInput && userInput.trim() === '삭제') {
+                isResetting = true; // 리셋 플래그 활성화 (자동 저장 차단)
+                showNotification('⏳ 데이터와 랭킹을 삭제 중입니다...');
+                
+                // 1. 로컬 데이터 즉시 삭제 (새로고침 시 초기화되도록)
                 localStorage.removeItem('magicalGreenhouse');
                 localStorage.removeItem('magicalGreenhouse_backup');
                 
-                // 게임 상태 초기화
-                gameState = {
-                    day: 1,
-                    gameTimeMinutes: 360, // 6:00 AM (6 * 60)
-                    gold: 100,
-                    level: 1,
-                    xp: 0,
-                    maxXp: 100,
-                    usedSlots: 0,
-                    totalSlots: 2,
-                    emptySlots: 0,
-                    weather: '☀️',
-                    weatherName: 'Sunny',
-                    inventory: [],
-                    harvestedPlants: [],
-                    plantedCrops: [],
-                    gears: [],
-                    lastSave: Date.now(),
-                    nextDayCost: 20, // 다음날 스킵 비용
-                    slotCost: 10,
-                    activeEvents: [],
-                    lastAutoProgress: Date.now(),
-                    autoProgressEnabled: true,
-                    bonuses: {
-                        growthSpeed: 1.0,
-                        sellPrice: 1.0,
-                        qualityLuck: 0
-                    },
-                    upgrades: {
-                        premiumSoil: 0,
-                        xpGloves: 0
-                    },
-                    news: [],
-                    upcomingNews: [],
-                    newsHistory: []
-                };
-                
-                // 가격/재고 데이터 초기화
-                dailyPrices = {};
-                dailyStock = {};
-                
-                showNotification('🗑️ 모든 게임 데이터가 초기화되었습니다!');
-                
-                // 화면 새로고침
-                location.reload();
+                // 2. 파이어베이스 데이터 삭제 시도 (users 및 rankings 노드)
+                if (gameState.playerId && typeof database !== 'undefined') {
+                    const removeUser = database.ref('users/' + gameState.playerId).remove();
+                    const removeRanking = database.ref('rankings/' + gameState.playerId).remove();
+                    
+                    Promise.all([removeUser, removeRanking])
+                        .catch(err => console.error("Firebase remove error:", err))
+                        .finally(() => {
+                            // 삭제 완료 후 즉시 새로고침
+                            location.reload();
+                        });
+                    
+                    // 네트워크 지연을 대비해 1.5초 후 강제 새로고침
+                    setTimeout(() => location.reload(), 1500);
+                } else {
+                    // 랭킹 데이터가 없는 경우 즉시 새로고침
+                    location.reload();
+                }
             } else if (userInput !== null) {
                 showNotification('❌ "삭제"라고 정확히 입력해주세요.');
             }
@@ -4897,14 +4940,14 @@
                     const change = currentSellPrice - yesterdayPrice;
                     const changePercent = Math.round((change / yesterdayPrice) * 100);
                     if (change > 0) {
-                        priceChangeText = `<span style="color: #27ae60; font-weight: bold;">+${change} (+${changePercent}%) 📈</span>`;
+                        priceChangeText = `<span style="color: #27ae60; font-weight: 900; font-size: 15px;">+${change} (+${changePercent}%) 📈</span>`;
                     } else if (change < 0) {
-                        priceChangeText = `<span style="color: #e74c3c; font-weight: bold;">${change} (${changePercent}%) 📉</span>`;
+                        priceChangeText = `<span style="color: #e74c3c; font-weight: 900; font-size: 15px;">${change} (${changePercent}%) 📉</span>`;
                     } else {
-                        priceChangeText = `<span style="color: #f39c12; font-weight: bold;">변화 없음 ➖</span>`;
+                        priceChangeText = `<span style="color: #f39c12; font-weight: 900; font-size: 15px;">변화 없음 ➖</span>`;
                     }
                 } else {
-                    priceChangeText = `<span style="color: #f39c12; font-weight: bold;">새로운 가격 ➖</span>`;
+                    priceChangeText = `<span style="color: #f39c12; font-weight: 900; font-size: 15px;">새로운 가격 ➖</span>`;
                 }
                 
                 // 보유량 표시
@@ -4916,7 +4959,7 @@
                         return grades.indexOf(a[0]) - grades.indexOf(b[0]);
                     }).forEach(([q, count]) => {
                         const grade = qualityGrades[q] || qualityGrades['D'];
-                        ownedText += `<span style="color: ${grade.color}">${grade.emoji}${count} </span>`;
+                        ownedText += `<span style="color: ${grade.color}; font-weight: bold;">${grade.emoji}${count} </span>`;
                     });
                     ownedText += ')';
                 } else {
@@ -4926,7 +4969,7 @@
                 // 이벤트 보너스 표시
                 let eventBonusText = '';
                 if (eventPrice > currentSellPrice) {
-                    eventBonusText = `<br><small style="color: #FF6B6B; font-weight: bold;">🎉 이벤트 보너스: +${eventPrice - currentSellPrice}</small>`;
+                    eventBonusText = `<br><span style="color: #FF6B6B; font-weight: 900; font-size: 14px;">🎉 이벤트 보너스: +${eventPrice - currentSellPrice}</span>`;
                 }
                 
                 html += `
@@ -5420,46 +5463,77 @@
 
         // 랭킹 등록
         function registerRanking() {
-            // 항상 닉네임을 새로 확인받음 (기존 닉네임이 있으면 기본값으로 제공)
-            let currentNickname = gameState.nickname || "";
-            let nickname = prompt("랭킹에 사용할 닉네임을 입력하세요 (최대 6자):", currentNickname);
-            
-            if (nickname === null) return; // 취소 버튼
-            
-            nickname = nickname.trim().substring(0, 6);
-            if (nickname === "") {
-                showNotification("❌ 닉네임을 입력해주세요.");
+            // 닉네임이 없으면 (정상적인 흐름에선 발생하지 않음)
+            if (!gameState.nickname) {
+                initGame(); // 닉네임 설정 강제 호출
                 return;
             }
             
-            // 닉네임 저장
-            gameState.nickname = nickname;
-            
-            // 플레이어 ID가 없으면 생성 (마이그레이션 대응)
+            saveGameState(); 
+            syncUserWithFirebase(true); // 유저 정보도 함께 최신화
+            syncRankingWithFirebase(false); // 알림 표시하며 현재 기록 등록
+        }
+
+        // 파이어베이스와 랭킹 데이터 동기화
+        function syncRankingWithFirebase(isSilent = true) {
+            if (!gameState.nickname) return; // 닉네임이 없으면 중단
+
+            // 플레이어 ID가 없으면 생성
             if (!gameState.playerId) {
                 gameState.playerId = 'player_' + Math.random().toString(36).substr(2, 9) + Date.now().toString(36);
+                saveGameState();
             }
-            
-            saveGameState(); 
 
             const rankingData = {
-                nickname: nickname, // 닉네임을 데이터 필드로 저장
+                nickname: gameState.nickname,
                 level: gameState.level,
                 gold: gameState.gold,
                 timestamp: Date.now()
             };
 
-            // playerId를 키로 사용하여 등록 (이름이 바뀌어도 자동으로 같은 플레이어의 기록이 치환됨)
+            // 명예의 전당(rankings) 노드 업데이트
             database.ref('rankings/' + gameState.playerId).set(rankingData)
                 .then(() => {
-                    showNotification(`🏆 [${nickname}]님의 기록이 갱신되었습니다!`);
+                    if (!isSilent) {
+                        showNotification(`🏆 [${gameState.nickname}]님의 기록이 갱신되었습니다!`);
+                    }
                     if (document.getElementById('ranking-list')) {
                         updateRankingDisplay();
                     }
                 })
                 .catch((error) => {
-                    console.error("랭킹 등록 실패:", error);
-                    showNotification("❌ 랭킹 등록에 실패했습니다.");
+                    console.error("랭킹 동기화 실패:", error);
+                    if (!isSilent) {
+                        showNotification("❌ 랭킹 등록에 실패했습니다.");
+                    }
+                });
+        }
+
+        // 파이어베이스 유저 정보 동기화 (users 노드)
+        function syncUserWithFirebase(isSilent = true) {
+            if (!gameState.nickname) return; 
+
+            if (!gameState.playerId) {
+                gameState.playerId = 'player_' + Math.random().toString(36).substr(2, 9) + Date.now().toString(36);
+                saveGameState();
+            }
+
+            const userData = {
+                nickname: gameState.nickname,
+                level: gameState.level,
+                gold: gameState.gold,
+                lastActive: Date.now()
+            };
+
+            // 전체 유저(users) 노드 업데이트
+            database.ref('users/' + gameState.playerId).set(userData)
+                .then(() => {
+                    if (!isSilent) {
+                        console.log('유저 정보 동기화 완료');
+                    }
+                })
+                .catch((error) => {
+                    console.error("유저 정보 동기화 실패:", error);
                 });
         }
 
