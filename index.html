@@ -17,7 +17,7 @@
         body {
             font-family: 'Courier New', monospace;
             min-height: 100vh;
-            padding: 20px;
+            padding: 0 20px;
             transition: all 0.5s ease;
         }
 
@@ -77,7 +77,7 @@
             width: 95%;
             margin: 0 auto;
             border-radius: 20px;
-            padding: 20px;
+            padding: 0 20px 10px;
             background: rgba(255, 255, 255, 0.35);
             backdrop-filter: blur(20px);
             border: 1px solid rgba(255, 255, 255, 0.4);
@@ -323,10 +323,11 @@
         /* 기존 날씨별 컨테이너 스타일 제거 - 위에서 새로운 스타일로 대체됨 */
 
         .header {
+            position: relative; /* 로고 절대 배치를 위한 기준점 */
             text-align: center;
             border-radius: 15px;
-            padding: 20px;
-            margin-bottom: 25px;
+            padding: 40px 20px 10px; /* 로고가 차지할 공간 확보 */
+            margin-bottom: 10px;
             transition: all 0.5s ease;
             background: rgba(255, 255, 255, 0.2);
             backdrop-filter: blur(10px);
@@ -2291,7 +2292,9 @@
 
     <div class="container">
         <div class="header">
-            <h1 style="margin: 0; font-size: 36px; text-shadow: 0 4px 10px rgba(0,0,0,0.3);">🌿 마법 온실 관리자</h1>
+            <!-- 로고를 절대 배치하여 다른 요소들의 레이아웃에 영향을 주지 않도록 설정 -->
+            <img src="C:\Users\Administrator\Desktop\d\Gemini_Generated_Image_m3iz3lm3iz3lm3iz-removebg-preview.png" alt="마법 온실 관리자 로고" 
+                 style="position: absolute; top: -75px; left: 50%; transform: translateX(-50%); height: 260px; filter: drop-shadow(0 4px 10px rgba(0,0,0,0.3)); z-index: 100; pointer-events: none;">
             <div id="game-status">
                 <div style="display: flex; justify-content: center; align-items: center; gap: 15px; margin-bottom: 10px;">
                     <div style="font-weight: bold; color: #4CAF50;">LV. <span id="player-level">1</span></div>
@@ -2300,6 +2303,9 @@
                         <div id="xp-text" style="position: absolute; width: 100%; text-align: center; font-size: 9px; color: white; line-height: 12px; text-shadow: 0 0 2px black;">0/100 XP</div>
                     </div>
                 </div>
+                <br>
+                <br>
+                <br>
                 <div style="font-size: 1.1em; font-weight: bold; margin-bottom: 5px; color: #fff; text-shadow: 0 2px 4px rgba(0,0,0,0.3);">— Day <span id="current-day">1</span> (<span id="timer-display" style="color: #FFD700; font-size: 1.3em; text-shadow: 0 0 10px rgba(255, 215, 0, 0.5);">--:--</span>) —</div>
                 <div>Gold: 💎 <span id="player-gold">100</span></div>
                 <div>Slots: <span id="used-slots">0</span>/<span id="total-slots">2</span> (Empty slots: <span id="empty-slots">0</span>)</div>
@@ -5745,30 +5751,11 @@
             `;
 
             gameState.blackMarket.items.forEach((item, index) => {
-                let extraInfo = '';
-                if (item.type === 'special_seed') {
-                    const rarityInfo = getSensitivityDescription(item.rarity);
-                    const isBypass = item.unlockLevel > gameState.level;
-                    
-                    // 암시장에서도 성장 일수 기반 시간 표시 (사용자 요청)
-                    const plantData = plants.find(p => p.id === item.plantId);
-                    const growTimeDisplay = (plantData && plantData.requiredDays > 0) ? 
-                        `${plantData.requiredDays}일` : formatTime(item.growTime);
-
-                    extraInfo = `
-                        <div style="margin-top: 8px; padding: 8px; background: rgba(0,0,0,0.3); border-radius: 8px; font-size: 0.85em; border-left: 3px solid #e74c3c;">
-                            <span style="color: #e74c3c;">📈 정보:</span> 
-                            ⏱️ ${growTimeDisplay} 
-                        </div>
-                    `;
-                }
-
                 html += `
                     <tr style="border-bottom: 1px solid rgba(231, 76, 60, 0.3);">
                         <td><span style="font-size: 1.5em;">${item.emoji}</span> <strong>${item.name}</strong></td>
                         <td class="description">
                             ${item.description}
-                            ${extraInfo}
                         </td>
                         <td style="color: #f1c40f; font-weight: bold;">💎 ${item.price}</td>
                         <td>
@@ -5884,7 +5871,6 @@
             switch(item.type) {
                 case 'exclusive_seed':
                 case 'locked_seed':
-                case 'special_seed':
                     gameState.inventory.push({
                         plantId: item.plantId,
                         isFast: item.isFast || false
@@ -5899,37 +5885,7 @@
                     };
                     showNotification(`👺 ${item.name}을(를) 사용했습니다! 내일 날씨는 ${item.weather}로 고정됩니다.`);
                     break;
-                case 'super_gear':
-                    // 기존 기어에 추가
-                    const existingGear = gameState.gears.find(g => g.id === item.gearId);
-                    if (existingGear) {
-                        existingGear.count++;
-                    } else {
-                        gameState.gears.push({
-                            id: item.gearId,
-                            name: item.name,
-                            count: 1,
-                            effect: item.description
-                        });
-                    }
-                    showNotification(`👺 ${item.name}을(를) 구매했습니다!`);
-                    break;
 
-                case 'special_growth':
-                    // 모든 심어진 작물의 성장 진행 (초단위 식물 대응)
-                    gameState.plantedCrops.forEach(crop => {
-                        const plant = plants.find(p => p.id === crop.plantId);
-                        if (!plant) return;
-                        
-                        if (plant.requiredDays === 0) {
-                            crop.plantTime = Date.now() - (plant.growTime * 1000 * 2);
-                        } else {
-                            crop.daysGrown = (crop.daysGrown || 0) + 2;
-                        }
-                    });
-                    showNotification(`🧪 신비한 농축 촉진제를 사용했습니다! 모든 작물이 2일만큼 자랐습니다.`);
-                    renderPlantSlots();
-                    break;
                 case 'fake_news':
                     // 가짜 뉴스 배포권: 사용 시 원하는 식물 선택 UI 표시
                     gameState.fakeNewsCount = (gameState.fakeNewsCount || 0) + 1;
@@ -5951,8 +5907,8 @@
 
         // 암시장 아이템 생성
         function generateBlackMarket() {
-            // 7% 확률로 활성화 (사용자 요청에 맞춰 상향 조정)
-            if (Math.random() > 0.07) {
+            // 3% 확률로 활성화 (사용자 요청에 맞춰 하향 조정)
+            if (Math.random() > 0.03) {
                 gameState.blackMarket.active = false;
                 gameState.blackMarket.items = [];
                 return;
@@ -6054,8 +6010,7 @@
 
             // 활성화되었는데 아이템이 하나도 없다면 강제로 하나 추가 (안전 장치)
             if (selectedItems.length === 0) {
-                const safeTemplate = templates.find(t => t.type === 'super_gear') || templates[2];
-                selectedItems.push({ ...safeTemplate });
+                selectedItems.push({ ...templates[templates.length - 1] });
             }
 
             gameState.blackMarket.items = selectedItems;
@@ -6441,22 +6396,6 @@
 
         // 다음날 기다리기 확인
         function waitNextDay() {
-            // 낡은 회중시계 효과: 다음 스킵 무료
-            if (gameState.nextDayCostFreeOnce) {
-                const confirmMessage = `🌅 Day ${gameState.day}에서 Day ${gameState.day + 1}로 진행하시겠습니까?\n\n` +
-                                     `• 새로운 날씨가 설정됩니다\n` +
-                                     `• 씨앗 가격이 변동됩니다\n` +
-                                     `• 심어진 식물들이 성장합니다\n` +
-                                     `• ⌚ 낡은 회중시계 효과로 이번 스킵은 무료입니다!`;
-                if (confirm(confirmMessage)) {
-                    gameState.nextDayCostFreeOnce = false;
-                    // 비용 없이 진행하되 nextDayCost는 초기화 (황금 밸런스: 50으로 초기화)
-                    gameState.nextDayCost = 50;
-                    proceedToNextDay(false); // 비용 없이
-                    showNotification(`⌚ 회중시계 효과! 스킵 비용이 0골드였으며, 다음 스킵 비용이 50골드로 초기화되었습니다.`);
-                }
-                return;
-            }
             const cost = gameState.nextDayCost;
             const confirmMessage = `🌅 Day ${gameState.day}에서 Day ${gameState.day + 1}로 진행하시겠습니까?\n\n` +
                                  `• 새로운 날씨가 설정됩니다\n` +
