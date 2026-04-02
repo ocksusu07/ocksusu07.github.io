@@ -539,6 +539,12 @@
             100% { box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3); }
         }
 
+        @keyframes timer-pulse {
+            0% { transform: scale(1); opacity: 1; }
+            50% { transform: scale(1.1); opacity: 0.8; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+
         /* 메뉴 카드 타이머 펄스 효과 */
         .menu-card.timer-pulse {
             animation: menuCardPulse 2s infinite;
@@ -1124,17 +1130,17 @@
             to { box-shadow: 0 0 20px #FFD700; }
         }
 
-        /* 알림 시스템 개선 (중앙 상단 박스 형태) */
+        /* 알림 시스템 개선 (중앙 상단 스택 방식) */
         #notification-container {
             position: fixed;
             top: 20px;
             left: 50%;
             transform: translateX(-50%);
-            z-index: 9999;
+            z-index: 10002;
             display: flex;
             flex-direction: column;
             align-items: center;
-            pointer-events: none; /* 클릭 방해 금지 */
+            pointer-events: none;
             width: 100%;
             max-width: 500px;
         }
@@ -1163,6 +1169,57 @@
         @keyframes fadeOutUp {
             from { opacity: 1; transform: translateY(0); }
             to { opacity: 0; transform: translateY(-20px); }
+        }
+
+        /* 중앙 확인 모달 알림 */
+        .modal-alert-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.7);
+            backdrop-filter: blur(8px);
+            z-index: 11000;
+            display: none;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal-alert-box {
+            background: rgba(30, 30, 30, 0.95);
+            border: 2px solid #FFD700;
+            border-radius: 20px;
+            padding: 30px;
+            width: 350px;
+            text-align: center;
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5);
+            animation: modalFadeIn 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+
+        .modal-alert-message {
+            color: #fff;
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 25px;
+            line-height: 1.5;
+            word-break: keep-all;
+        }
+
+        .modal-alert-btn {
+            background: linear-gradient(135deg, #FFD700, #FFA500);
+            color: #000;
+            border: none;
+            padding: 12px 40px;
+            border-radius: 12px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+
+        .modal-alert-btn:hover {
+            transform: scale(1.05);
         }
 
         .back-button {
@@ -1406,6 +1463,9 @@
             }
             body {
                 padding-bottom: 56px;
+            }
+            .floating-bottom-right-stack {
+                bottom: 62px;
             }
             .menu-card {
                 display: inline-block;
@@ -1664,11 +1724,415 @@
                 width: 100%;
             }
         }
+
+        /* 클라우드 백업 (좌측 하단 고정) */
+        .cloud-backup-toolbar {
+            position: fixed;
+            left: 12px;
+            bottom: 20px;
+            z-index: 1002;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+        .cloud-backup-toolbar button {
+            padding: 10px 14px;
+            border-radius: 10px;
+            border: 1px solid rgba(255, 255, 255, 0.35);
+            background: linear-gradient(135deg, rgba(52, 152, 219, 0.85), rgba(41, 128, 185, 0.9));
+            color: #fff;
+            font-size: 13px;
+            font-weight: 700;
+            cursor: pointer;
+            box-shadow: 0 4px 14px rgba(0, 0, 0, 0.25);
+            transition: transform 0.15s ease, box-shadow 0.15s ease;
+            white-space: nowrap;
+        }
+        .cloud-backup-toolbar button:last-child {
+            background: linear-gradient(135deg, rgba(46, 204, 113, 0.85), rgba(39, 174, 96, 0.9));
+        }
+        .cloud-backup-toolbar button:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 6px 18px rgba(0, 0, 0, 0.3);
+        }
+        .cloud-backup-toolbar button:disabled {
+            opacity: 0.55;
+            cursor: not-allowed;
+            transform: none;
+        }
+        @media (max-width: 768px) {
+            .cloud-backup-toolbar {
+                bottom: 52px;
+                left: 8px;
+            }
+            .cloud-backup-toolbar button {
+                padding: 8px 10px;
+                font-size: 12px;
+            }
+        }
+        .cloud-backup-modal-overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            z-index: 10050;
+            background: rgba(0, 0, 0, 0.72);
+            backdrop-filter: blur(8px);
+            align-items: center;
+            justify-content: center;
+            padding: 16px;
+        }
+        .cloud-backup-modal-inner {
+            width: 100%;
+            max-width: 420px;
+            background: rgba(30, 40, 55, 0.95);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            border-radius: 18px;
+            padding: 24px 22px;
+            box-shadow: 0 24px 60px rgba(0, 0, 0, 0.45);
+            animation: modal-fade-in 0.35s ease;
+        }
+        .cloud-backup-modal-inner h3 {
+            color: #7ec8e3;
+            font-size: 1.15rem;
+            margin-bottom: 12px;
+            text-align: center;
+        }
+        .cloud-backup-warning {
+            font-size: 12px;
+            line-height: 1.55;
+            color: #f0c674;
+            background: rgba(241, 196, 15, 0.12);
+            border: 1px solid rgba(241, 196, 15, 0.35);
+            border-radius: 10px;
+            padding: 12px;
+            margin-bottom: 18px;
+        }
+        .cloud-backup-field {
+            margin-bottom: 14px;
+        }
+        .cloud-backup-field label {
+            display: block;
+            font-size: 12px;
+            color: #bdc3c7;
+            margin-bottom: 6px;
+        }
+        .cloud-backup-field input {
+            width: 100%;
+            padding: 12px 14px;
+            border-radius: 10px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            background: rgba(0, 0, 0, 0.25);
+            color: #ecf0f1;
+            font-size: 15px;
+            outline: none;
+        }
+        .cloud-backup-field input:focus {
+            border-color: #3498db;
+        }
+        .cloud-backup-field-label {
+            display: block;
+            font-size: 12px;
+            color: #bdc3c7;
+            margin-bottom: 6px;
+        }
+        .cloud-backup-nickname-display {
+            width: 100%;
+            padding: 12px 14px;
+            border-radius: 10px;
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            background: rgba(0, 0, 0, 0.35);
+            color: #7ec8e3;
+            font-size: 16px;
+            font-weight: 700;
+            text-align: center;
+        }
+        .cloud-backup-pin-field label {
+            text-align: center;
+            width: 100%;
+        }
+        .cloud-backup-pin-hint {
+            font-size: 11px;
+            color: #95a5a6;
+            margin-bottom: 8px;
+            text-align: center;
+        }
+        #cloud-password-input,
+        #welcome-cloud-pin {
+            text-align: center;
+            letter-spacing: 0.5em;
+            font-size: 1.25rem;
+            font-weight: 700;
+            padding-left: 14px;
+            padding-right: 14px;
+        }
+        .cloud-backup-actions {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+        }
+        .cloud-backup-actions button {
+            flex: 1;
+            padding: 12px;
+            border-radius: 10px;
+            border: none;
+            font-size: 14px;
+            font-weight: 700;
+            cursor: pointer;
+        }
+        .cloud-backup-actions .cloud-backup-submit {
+            background: linear-gradient(135deg, #3498db, #2980b9);
+            color: #fff;
+        }
+        .cloud-backup-actions .cloud-backup-cancel {
+            background: rgba(255, 255, 255, 0.12);
+            color: #ecf0f1;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        #welcome-cloud-load-modal.cloud-backup-modal-overlay {
+            z-index: 10100;
+        }
+        #welcome-cloud-nickname {
+            text-align: center;
+            font-weight: 700;
+        }
+
+        /* 패치노트 (유저 팝업) */
+        .patch-notes-overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            z-index: 10200;
+            background: rgba(0, 0, 0, 0.78);
+            backdrop-filter: blur(10px);
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        .patch-notes-box {
+            width: 100%;
+            max-width: 520px;
+            max-height: min(85vh, 640px);
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            background: linear-gradient(165deg, rgba(22, 32, 48, 0.97), rgba(12, 18, 28, 0.98));
+            border: 2px solid rgba(255, 215, 0, 0.45);
+            border-radius: 18px;
+            box-shadow: 0 24px 64px rgba(0, 0, 0, 0.55), 0 0 0 1px rgba(255, 255, 255, 0.06) inset;
+            font-family: 'Courier New', Consolas, 'Malgun Gothic', monospace;
+        }
+        .patch-notes-box-header {
+            padding: 22px 24px 16px;
+            border-bottom: 1px solid rgba(255, 215, 0, 0.25);
+            text-align: center;
+        }
+        .patch-notes-box-header h2 {
+            margin: 0 0 8px 0;
+            color: #ffeaa7;
+            font-size: 1.35rem;
+            letter-spacing: 0.06em;
+            text-shadow: 0 0 20px rgba(255, 215, 0, 0.35);
+        }
+        .patch-notes-version-tag {
+            display: inline-block;
+            font-size: 0.8rem;
+            color: #74b9ff;
+            border: 1px solid rgba(116, 185, 255, 0.4);
+            padding: 4px 12px;
+            border-radius: 999px;
+            margin-top: 4px;
+        }
+        .patch-notes-box-scroll {
+            padding: 18px 24px;
+            overflow-y: auto;
+            flex: 1;
+        }
+        .patch-notes-box-scroll h3 {
+            margin: 0 0 14px 0;
+            color: #dfe6e9;
+            font-size: 1.05rem;
+            line-height: 1.45;
+        }
+        .patch-notes-list {
+            margin: 0;
+            padding: 0 0 0 1.1em;
+            color: #b2bec3;
+            font-size: 0.95rem;
+            line-height: 1.65;
+        }
+        .patch-notes-list li {
+            margin-bottom: 10px;
+        }
+        .patch-notes-box-footer {
+            padding: 16px 24px 20px;
+            border-top: 1px solid rgba(255, 255, 255, 0.08);
+        }
+        .patch-notes-confirm-btn {
+            width: 100%;
+            padding: 14px;
+            border: none;
+            border-radius: 12px;
+            background: linear-gradient(135deg, #00b894, #00cec9);
+            color: #fff;
+            font-size: 1rem;
+            font-weight: 700;
+            cursor: pointer;
+            font-family: inherit;
+        }
+        .patch-notes-confirm-btn:hover {
+            filter: brightness(1.08);
+        }
+
+        /* 관리자 로그인 / 배포 패널 */
+        .patch-admin-modal-overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            z-index: 10250;
+            background: rgba(0, 0, 0, 0.75);
+            backdrop-filter: blur(8px);
+            align-items: center;
+            justify-content: center;
+            padding: 16px;
+        }
+        .patch-admin-modal-inner {
+            width: 100%;
+            max-width: 440px;
+            background: rgba(30, 38, 52, 0.96);
+            border: 1px solid rgba(255, 107, 107, 0.35);
+            border-radius: 16px;
+            padding: 22px;
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.45);
+            font-family: 'Courier New', Consolas, monospace;
+        }
+        .patch-admin-modal-inner.wide {
+            max-width: 520px;
+        }
+        .patch-admin-modal-inner h3 {
+            color: #ff7675;
+            margin: 0 0 14px 0;
+            font-size: 1.1rem;
+        }
+        .patch-admin-field {
+            margin-bottom: 12px;
+        }
+        .patch-admin-field label {
+            display: block;
+            font-size: 11px;
+            color: #b2bec3;
+            margin-bottom: 4px;
+        }
+        .patch-admin-field input,
+        .patch-admin-field textarea {
+            width: 100%;
+            padding: 10px 12px;
+            border-radius: 8px;
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            background: rgba(0, 0, 0, 0.3);
+            color: #dfe6e9;
+            font-size: 14px;
+            font-family: inherit;
+            box-sizing: border-box;
+        }
+        .patch-admin-field textarea {
+            min-height: 140px;
+            resize: vertical;
+            line-height: 1.5;
+        }
+        .patch-admin-actions {
+            display: flex;
+            gap: 10px;
+            margin-top: 18px;
+        }
+        .patch-admin-actions button {
+            flex: 1;
+            padding: 11px;
+            border-radius: 10px;
+            border: none;
+            font-weight: 700;
+            cursor: pointer;
+            font-family: inherit;
+        }
+        .patch-admin-btn-secondary {
+            background: rgba(255, 255, 255, 0.1);
+            color: #ddd;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        .patch-admin-btn-primary {
+            background: linear-gradient(135deg, #e17055, #d63031);
+            color: #fff;
+        }
+
+        .floating-bottom-right-stack {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            z-index: 1000;
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+            gap: 8px;
+        }
+        .floating-bottom-right-stack .floating-actions-row {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+        #patch-admin-panel-btn {
+            display: none;
+            align-items: center;
+            padding: 10px 14px;
+            border-radius: 10px;
+            border: 1px solid rgba(255, 107, 107, 0.5);
+            background: linear-gradient(135deg, rgba(214, 48, 49, 0.9), rgba(225, 112, 85, 0.85));
+            color: #fff;
+            font-size: 12px;
+            font-weight: 700;
+            cursor: pointer;
+            box-shadow: 0 4px 14px rgba(0, 0, 0, 0.3);
+            font-family: 'Courier New', monospace;
+        }
     </style>
 </head>
 <body>
     <!-- 알림 컨테이너 -->
     <div id="notification-container"></div>
+
+    <!-- 중앙 확인 모달 알림 -->
+    <div id="modal-alert-overlay" class="modal-alert-overlay">
+        <div class="modal-alert-box">
+            <div id="modal-alert-message" class="modal-alert-message"></div>
+            <button type="button" class="modal-alert-btn" onclick="closeModalAlert()">확인</button>
+        </div>
+    </div>
+
+    <!-- 클라우드 백업 (좌측 하단 고정) -->
+    <div id="cloud-backup-toolbar" class="cloud-backup-toolbar" aria-label="클라우드 백업">
+        <button type="button" id="cloud-open-save-btn">데이터 저장</button>
+        <button type="button" id="cloud-open-load-btn">데이터 불러오기</button>
+    </div>
+
+    <!-- 클라우드 백업 모달 -->
+    <div id="cloud-backup-modal" class="cloud-backup-modal-overlay" role="dialog" aria-modal="true" aria-labelledby="cloud-backup-modal-title">
+        <div class="cloud-backup-modal-inner">
+            <h3 id="cloud-backup-modal-title">클라우드 저장</h3>
+            <p class="cloud-backup-warning"><strong>주의:</strong> 관리자 이름과 4자리 PIN을 분실하면 데이터를 찾을 수 없으며, 기존 PIN과 다르면 저장이 불가능합니다</p>
+            <div class="cloud-backup-field">
+                <span id="cloud-nickname-label" class="cloud-backup-field-label">관리자 이름 (게임에서 설정한 이름)</span>
+                <div id="cloud-display-nickname" class="cloud-backup-nickname-display" aria-live="polite">—</div>
+                <input type="text" id="cloud-nickname-input" maxlength="6" style="display:none; width: 100%; padding: 10px; border-radius: 8px; border: 1px solid rgba(255, 255, 255, 0.3); background: rgba(0,0,0,0.3); color: #fff; font-size: 16px; margin-top: 5px; outline: none;" placeholder="불러올 이름 입력" />
+            </div>
+            <div class="cloud-backup-field cloud-backup-pin-field">
+                <label for="cloud-password-input">PIN (4자리 숫자)</label>
+                <p id="cloud-pin-hint" class="cloud-backup-pin-hint">숫자 4자리를 입력하세요 (예: 1234)</p>
+                <input type="password" id="cloud-password-input" maxlength="4" inputmode="numeric" pattern="[0-9]*" autocomplete="one-time-code" placeholder="••••" aria-describedby="cloud-pin-hint" />
+            </div>
+            <div class="cloud-backup-actions">
+                <button type="button" class="cloud-backup-cancel" id="cloud-backup-cancel-btn">취소</button>
+                <button type="button" class="cloud-backup-submit" id="cloud-backup-submit-btn">저장</button>
+            </div>
+        </div>
+    </div>
 
     <!-- 좌측 랭킹 보드 복구 -->
     <div class="global-ranking-board">
@@ -1695,6 +2159,32 @@
             <button onclick="confirmNickname()" style="width: 100%; padding: 15px; border-radius: 12px; border: none; background: linear-gradient(135deg, #4CAF50, #81C784); color: white; font-size: 18px; font-weight: bold; cursor: pointer; transition: transform 0.2s, box-shadow 0.2s;" onmouseover="this.style.transform='scale(1.02)'; this.style.boxShadow='0 5px 15px rgba(76, 175, 80, 0.4)'" onmouseout="this.style.transform='scale(1)'; this.style.boxShadow='none'">시작하기</button>
             
             <p style="color: #888; margin-top: 15px; font-size: 11px;">※ 설정 후 변경이 불가능합니다.</p>
+
+            <div style="margin-top: 22px; padding-top: 20px; border-top: 1px solid rgba(255,255,255,0.18);">
+                <p style="color: #c5d4e0; font-size: 13px; line-height: 1.55; margin-bottom: 14px;">저장해 둔 데이터가 있나요?<br>다른 PC에서 «데이터 저장»으로 올려둔 기록이 있으면 아래에서 불러올 수 있습니다.</p>
+                <button type="button" onclick="openWelcomeCloudLoadModal()" style="width: 100%; padding: 12px 14px; border-radius: 12px; border: 1px solid rgba(52, 152, 219, 0.55); background: linear-gradient(135deg, rgba(52,152,219,0.4), rgba(41,128,185,0.5)); color: #fff; font-size: 15px; font-weight: bold; cursor: pointer; transition: transform 0.2s, box-shadow 0.2s;" onmouseover="this.style.transform='scale(1.02)'; this.style.boxShadow='0 4px 14px rgba(52,152,219,0.35)'" onmouseout="this.style.transform='scale(1)'; this.style.boxShadow='none'">☁️ 클라우드에서 불러오기</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 첫 화면: 클라우드 불러오기 (관리자 이름·PIN 직접 입력) -->
+    <div id="welcome-cloud-load-modal" class="cloud-backup-modal-overlay" style="display: none;" role="dialog" aria-modal="true" aria-labelledby="welcome-cloud-load-title">
+        <div class="cloud-backup-modal-inner">
+            <h3 id="welcome-cloud-load-title">☁️ 클라우드에서 불러오기</h3>
+            <p class="cloud-backup-warning"><strong>안내:</strong> 저장할 때 사용한 <strong>관리자 이름</strong>과 <strong>4자리 PIN</strong>을 입력하세요. 다른 기기에서 저장한 기록을 이 브라우저로 가져옵니다.</p>
+            <div class="cloud-backup-field">
+                <label for="welcome-cloud-nickname">관리자 이름</label>
+                <input type="text" id="welcome-cloud-nickname" maxlength="6" autocomplete="username" placeholder="저장 시 이름 (최대 6자)" />
+            </div>
+            <div class="cloud-backup-field cloud-backup-pin-field">
+                <label for="welcome-cloud-pin">PIN (4자리 숫자)</label>
+                <p class="cloud-backup-pin-hint">숫자 4자리를 입력하세요 (예: 1234)</p>
+                <input type="password" id="welcome-cloud-pin" maxlength="4" inputmode="numeric" pattern="[0-9]*" autocomplete="one-time-code" placeholder="••••" />
+            </div>
+            <div class="cloud-backup-actions">
+                <button type="button" class="cloud-backup-cancel" id="welcome-cloud-cancel-btn">취소</button>
+                <button type="button" class="cloud-backup-submit" id="welcome-cloud-submit-btn">불러오기</button>
+            </div>
         </div>
     </div>
 
@@ -1740,6 +2230,13 @@
 
     <!-- 우측 사이드바 -->
     <div class="right-sidebar">
+        <!-- 패치노트 버튼 (추가) -->
+        <div class="menu-card" id="patch-notes-btn" onclick="openLatestPatchNotes()" style="background: linear-gradient(135deg, #6c5ce7 0%, #a29bfe 100%); border: 1px solid #fff;">
+            <span class="menu-card-icon">📜</span>
+            <div class="menu-card-title" style="color: #fff;">패치노트</div>
+            <div class="menu-card-description">최신 업데이트 소식을 확인하세요</div>
+        </div>
+
         <div class="menu-card" onclick="showMarketPrices()">
             <span class="menu-card-icon">📊</span>
             <div class="menu-card-title">시세 확인</div>
@@ -1758,12 +2255,6 @@
             <div class="menu-card-description">시간을 건너뛰어 다음날로 진행하세요</div>
         </div>
         
-        <div class="menu-card" id="timer-menu-card">
-            <span class="menu-card-icon">⏰</span>
-            <div class="menu-card-title">다음날까지</div>
-            <div class="menu-card-description" id="timer-display">--:--</div>
-        </div>
-
         <!-- 암시장 버튼 (활성화 시에만 표시) -->
         <div class="menu-card" id="black-market-card" onclick="showBlackMarket()" style="display: none; background: linear-gradient(135deg, #2c3e50 0%, #000000 100%); border: 1px solid #e74c3c;">
             <span class="menu-card-icon">👺</span>
@@ -1790,7 +2281,7 @@
                         <div id="xp-text" style="position: absolute; width: 100%; text-align: center; font-size: 9px; color: white; line-height: 12px; text-shadow: 0 0 2px black;">0/100 XP</div>
                     </div>
                 </div>
-                <div>— Day <span id="current-day">1</span> / <span id="current-time">6:00 AM</span> —</div>
+                <div style="font-size: 1.1em; font-weight: bold; margin-bottom: 5px; color: #333;">— Day <span id="current-day">1</span> (<span id="timer-display" style="color: #000; font-size: 1.2em; text-shadow: none;">--:--</span>) —</div>
                 <div>Gold: 💎 <span id="player-gold">100</span></div>
                 <div>Slots: <span id="used-slots">0</span>/<span id="total-slots">2</span> (Empty slots: <span id="empty-slots">0</span>)</div>
                 <div>Weather: <span id="current-weather">☀️</span> <span id="weather-name">Sunny</span></div>
@@ -1809,43 +2300,97 @@
 
 
 
-    <!-- 플로팅 하단 컨트롤 (초기화 및 알림 설정) -->
-    <div style="position: fixed; bottom: 20px; right: 20px; z-index: 1000; display: flex; gap: 10px;">
-        <!-- 알림 설정 버튼 (아이콘 형태로 구석 배치) -->
-        <button onclick="checkNotificationPermission()" title="알림 상태 확인" style="
-            background: linear-gradient(135deg, #f1c40f, #f39c12);
-            color: white;
-            border: none;
-            border-radius: 50%;
-            width: 40px;
-            height: 40px;
-            font-size: 18px;
-            cursor: pointer;
-            opacity: 0.7;
-            transition: all 0.3s ease;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.3);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        " onmouseover="this.style.opacity='1'; this.style.transform='scale(1.1)'" onmouseout="this.style.opacity='0.7'; this.style.transform='scale(1)'">
-            🔔
-        </button>
+    <!-- 플로팅 하단 컨트롤 (관리자 패널 / 알림 / 초기화) -->
+    <div class="floating-bottom-right-stack">
+        <button type="button" id="patch-admin-panel-btn" title="패치노트 배포">🛠 관리자 패널</button>
+        <div class="floating-actions-row">
+            <button onclick="checkNotificationPermission()" title="알림 상태 확인" style="
+                background: linear-gradient(135deg, #f1c40f, #f39c12);
+                color: white;
+                border: none;
+                border-radius: 50%;
+                width: 40px;
+                height: 40px;
+                font-size: 18px;
+                cursor: pointer;
+                opacity: 0.7;
+                transition: all 0.3s ease;
+                box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+                display: flex;
+                align-items: center;
+                justify-content: center;
+            " onmouseover="this.style.opacity='1'; this.style.transform='scale(1.1)'" onmouseout="this.style.opacity='0.7'; this.style.transform='scale(1)'">
+                🔔
+            </button>
+            <button id="patch-admin-logout-btn" onclick="submitPatchAdminLogout()" title="관리자 로그아웃" style="
+                display: none;
+                background: linear-gradient(135deg, #34495e, #2c3e50);
+                color: white;
+                border: none;
+                border-radius: 8px;
+                padding: 8px 12px;
+                font-size: 12px;
+                cursor: pointer;
+                box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+            ">
+                🚪 로그아웃
+            </button>
+            <button id="clear-game-data-btn" onclick="clearGameData()" title="데이터 초기화" style="
+                background: linear-gradient(135deg, #e74c3c, #c0392b);
+                color: white;
+                border: none;
+                border-radius: 8px;
+                padding: 8px 12px;
+                font-size: 12px;
+                cursor: pointer;
+                opacity: 0.7;
+                transition: opacity 0.3s ease;
+                box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+            " onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='0.7'">
+                🗑️ 초기화
+            </button>
+        </div>
+    </div>
 
-        <!-- 데이터 초기화 버튼 -->
-        <button onclick="clearGameData()" title="데이터 초기화" style="
-            background: linear-gradient(135deg, #e74c3c, #c0392b);
-            color: white;
-            border: none;
-            border-radius: 8px;
-            padding: 8px 12px;
-            font-size: 12px;
-            cursor: pointer;
-            opacity: 0.7;
-            transition: opacity 0.3s ease;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.3);
-        " onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='0.7'">
-            🗑️ 초기화
-        </button>
+    <!-- 패치노트 (유저 공지 팝업) -->
+    <div id="patch-notes-user-modal" class="patch-notes-overlay" role="dialog" aria-modal="true" aria-labelledby="patch-notes-heading">
+        <div class="patch-notes-box">
+            <div class="patch-notes-box-header">
+                <h2 id="patch-notes-heading">[신규 업데이트!]</h2>
+                <div class="patch-notes-version-tag">패치 버전 <span id="patch-notes-version-display"></span></div>
+            </div>
+            <div class="patch-notes-box-scroll">
+                <h3 id="patch-notes-title-display"></h3>
+                <ul id="patch-notes-body-list" class="patch-notes-list"></ul>
+            </div>
+            <div class="patch-notes-box-footer">
+                <button type="button" class="patch-notes-confirm-btn" id="patch-notes-confirm-btn">확인</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 관리자 패치 배포 -->
+    <div id="patch-admin-deploy-modal" class="patch-admin-modal-overlay" role="dialog" aria-modal="true">
+        <div class="patch-admin-modal-inner wide">
+            <h3>패치노트 배포</h3>
+            <p style="color:#888;font-size:11px;margin:0 0 12px;">Firebase <code>patchNotes/latest</code>에 실시간 반영됩니다. 내용은 한 줄에 한 항목(불릿)으로 적으세요.</p>
+            <div class="patch-admin-field">
+                <label for="patch-deploy-version">버전 번호</label>
+                <input type="text" id="patch-deploy-version" placeholder="예: 1.2" maxlength="16" />
+            </div>
+            <div class="patch-admin-field">
+                <label for="patch-deploy-title">패치노트 제목</label>
+                <input type="text" id="patch-deploy-title" placeholder="예: 시세 밸런스 조정" maxlength="120" />
+            </div>
+            <div class="patch-admin-field">
+                <label for="patch-deploy-body">내용 (줄마다 한 항목)</label>
+                <textarea id="patch-deploy-body" placeholder="- 상점 가격 조정&#10;- 버그 수정&#10;- UI 개선"></textarea>
+            </div>
+            <div class="patch-admin-actions">
+                <button type="button" class="patch-admin-btn-secondary" id="patch-deploy-cancel">닫기</button>
+                <button type="button" class="patch-admin-btn-primary" id="patch-deploy-submit">배포</button>
+            </div>
+        </div>
     </div>
 
     <!-- 모바일 하단 메뉴바 -->
@@ -1867,6 +2412,12 @@
         // Firebase 초기화
         firebase.initializeApp(firebaseConfig);
         const database = firebase.database(); // 여기서 database가 정의됨!
+
+        const PATCH_NOTES_LATEST_REF = database.ref('patchNotes/latest');
+        let patchNotesRealtimeStarted = false;
+        let patchNotesUserModalOpen = false;
+        let pendingPatchRemoteVersion = null;
+
         // 게임 상태
         let gameState = {
             day: 1,
@@ -1914,7 +2465,8 @@
             weatherLock: null, // 날씨 고정 정보 { weather: '🌈', endDay: 5 }
             currentManagedSlot: null, // 현재 관리 중인 슬롯 인덱스
             nickname: null, // 유저 닉네임
-            playerId: 'player_' + Math.random().toString(36).substr(2, 9) + Date.now().toString(36) // 고유 플레이어 ID
+            playerId: 'player_' + Math.random().toString(36).substr(2, 9) + Date.now().toString(36), // 고유 플레이어 ID
+            lastSeenPatchVersion: null // Firebase 패치노트 마지막으로 확인한 버전
         };
 
         // 마법 식물 데이터
@@ -2411,6 +2963,9 @@
             
             // 초기 저장
             saveGameState();
+
+            startPatchNotesRealtimeListener();
+            schedulePatchNotesCheck();
         }
 
         // 수확한 모든 식물 판매
@@ -2461,6 +3016,7 @@
                 
                 // 랭킹 업데이트
                 updateRankingDisplay();
+                schedulePatchNotesCheck();
             } else {
                 showNotification("❌ 관리자 이름을 입력해주세요.");
             }
@@ -2603,6 +3159,567 @@
             }
         }
 
+        let cloudBackupModalMode = 'save';
+
+        function validateCloudNickname(nickname) {
+            if (!nickname) return '관리자 이름이 없습니다. 먼저 게임 시작 시 이름을 설정해주세요.';
+            if (nickname.length > 32) return '관리자 이름은 32자 이하여야 합니다.';
+            if (/[.#$\[\]\/]/.test(nickname)) {
+                return '관리자 이름에 클라우드에 사용할 수 없는 문자가 있습니다: . # $ [ ] /';
+            }
+            return null;
+        }
+
+        function getNicknameForCloudBackup() {
+            const nickname = gameState.nickname != null ? String(gameState.nickname).trim() : '';
+            return { nickname, error: validateCloudNickname(nickname) };
+        }
+
+        function validateCloudPin(pin) {
+            const s = pin != null ? String(pin).trim() : '';
+            if (!s) return '4자리 숫자 PIN을 입력해주세요.';
+            if (!/^\d{4}$/.test(s)) return 'PIN은 숫자 4자리만 입력할 수 있습니다.';
+            return null;
+        }
+
+        function buildCloudGameDataPayload() {
+            gameState.elapsedAutoProgress = Date.now() - gameState.lastAutoProgress;
+            return {
+                ...gameState,
+                dailyPrices: dailyPrices,
+                dailyStock: dailyStock,
+                lastSave: Date.now(),
+                saveVersion: '1.0'
+            };
+        }
+
+        function applyCloudGameDataToSession(savedState) {
+            if (!savedState || savedState.saveVersion !== '1.0') return false;
+            gameState = { ...gameState, ...savedState };
+            if (gameState.harvestedPlants) {
+                gameState.harvestedPlants.forEach(plant => {
+                    if (plant.quality === 'perfect') plant.quality = 'S';
+                    else if (plant.quality === 'good') plant.quality = 'B';
+                    else if (plant.quality === 'normal') plant.quality = 'D';
+                });
+            }
+            if (gameState.newsHistory) {
+                gameState.newsHistory.forEach(item => {
+                    if (!item.effectiveDay) item.effectiveDay = item.day;
+                });
+            }
+            if (savedState.dailyPrices) dailyPrices = savedState.dailyPrices;
+            if (savedState.dailyStock) dailyStock = savedState.dailyStock;
+            gameState.lastAutoProgress = Date.now() - (gameState.elapsedAutoProgress || 0);
+            return true;
+        }
+
+        function updateUI() {
+            const currentWeather = weathers.find(w => w.emoji === gameState.weather);
+            if (currentWeather) {
+                document.body.className = currentWeather.class;
+            } else {
+                document.body.className = 'weather-sunny';
+            }
+            updateDisplay();
+            refreshAllScreens();
+            if (typeof updateRankingDisplay === 'function') updateRankingDisplay();
+        }
+
+        function openCloudBackupModal(mode) {
+            const { nickname, error } = getNicknameForCloudBackup();
+            if (error) {
+                alert(error);
+                return;
+            }
+            cloudBackupModalMode = mode === 'load' ? 'load' : 'save';
+            const modal = document.getElementById('cloud-backup-modal');
+            const title = document.getElementById('cloud-backup-modal-title');
+            const submitBtn = document.getElementById('cloud-backup-submit-btn');
+            const nickLabel = document.getElementById('cloud-nickname-label');
+            const nickDisplay = document.getElementById('cloud-display-nickname');
+            const nickInput = document.getElementById('cloud-nickname-input');
+            const passInput = document.getElementById('cloud-password-input');
+            
+            if (!modal || !title || !submitBtn) return;
+            
+            title.textContent = cloudBackupModalMode === 'save' ? '클라우드에 데이터 저장' : '클라우드에서 데이터 불러오기';
+            submitBtn.textContent = cloudBackupModalMode === 'save' ? '저장' : '불러오기';
+            
+            if (cloudBackupModalMode === 'load') {
+                if (nickLabel) nickLabel.textContent = '불러올 관리자 이름';
+                if (nickDisplay) nickDisplay.style.display = 'none';
+                if (nickInput) {
+                    nickInput.style.display = 'block';
+                    nickInput.value = '';
+                }
+            } else {
+                if (nickLabel) nickLabel.textContent = '관리자 이름 (현재 계정)';
+                if (nickDisplay) {
+                    nickDisplay.style.display = 'block';
+                    nickDisplay.textContent = nickname;
+                }
+                if (nickInput) nickInput.style.display = 'none';
+            }
+            
+            if (passInput) passInput.value = '';
+            modal.style.display = 'flex';
+            
+            setTimeout(() => { 
+                if (cloudBackupModalMode === 'load' && nickInput) nickInput.focus();
+                else if (passInput) passInput.focus(); 
+            }, 100);
+        }
+
+        function closeCloudBackupModal() {
+            const modal = document.getElementById('cloud-backup-modal');
+            if (modal) modal.style.display = 'none';
+        }
+
+        async function performCloudBackupLoadWithCredentials(nickname, password, submitBtn) {
+            const nick = nickname != null ? String(nickname).trim() : '';
+            const pin = password != null ? String(password).trim() : '';
+            
+            if (!nick) {
+                alert('불러올 이름을 입력해주세요.');
+                return false;
+            }
+            
+            const nickErr = validateCloudNickname(nick);
+            if (nickErr) {
+                alert(nickErr);
+                return false;
+            }
+            const pinErr = validateCloudPin(pin);
+            if (pinErr) {
+                alert(pinErr);
+                return false;
+            }
+
+            if (submitBtn) submitBtn.disabled = true;
+            try {
+                const userRef = database.ref('users/' + nick);
+                const snapshot = await userRef.once('value');
+                if (!snapshot.exists()) {
+                    alert('❌ 해당 이름으로 저장된 클라우드 백업을 찾을 수 없습니다.');
+                    return false;
+                }
+                const row = snapshot.val();
+                const storedPass = row && row.password != null ? String(row.password) : '';
+                if (storedPass !== pin) {
+                    alert('❌ PIN이 일치하지 않습니다. 데이터를 불러올 수 없습니다.');
+                    return false;
+                }
+
+                // [추가] 닉네임이 admin이고 PIN이 일치하면 관리자 세션 활성화
+                if (nick === 'admin') {
+                    setPatchAdminSession(true);
+                    showModalAlert('🛠 관리자 패널이 활성화되었습니다.');
+                }
+
+                const gameData = row.gameData;
+                if (!gameData) {
+                    alert('❌ 저장된 게임 데이터가 없거나 형식이 올바르지 않습니다.');
+                    return false;
+                }
+                if (!applyCloudGameDataToSession(gameData)) {
+                    alert('❌ 저장 데이터 버전을 읽을 수 없습니다. (saveVersion 불일치)');
+                    return false;
+                }
+                updateUI();
+                saveGameState();
+                showNotification('☁️ 클라우드에서 데이터를 불러왔습니다!');
+                schedulePatchNotesCheck('cloud-load');
+                return true;
+            } catch (e) {
+                console.error('Cloud load error:', e);
+                alert('클라우드 불러오기 중 오류가 발생했습니다. 네트워크와 Firebase 규칙을 확인해주세요.');
+                return false;
+            } finally {
+                if (submitBtn) submitBtn.disabled = false;
+            }
+        }
+
+        function isNicknameModalBlockingPatch() {
+            const m = document.getElementById('nickname-modal');
+            return !!(m && m.style.display === 'flex');
+        }
+
+        function setPatchAdminSession(active) {
+            if (active) sessionStorage.setItem('patchAdminSession', '1');
+            else sessionStorage.removeItem('patchAdminSession');
+            refreshPatchAdminPanelButton();
+        }
+
+        function refreshPatchAdminPanelButton() {
+            const isAdmin = sessionStorage.getItem('patchAdminSession') === '1';
+            
+            const panelBtn = document.getElementById('patch-admin-panel-btn');
+            if (panelBtn) panelBtn.style.display = isAdmin ? 'inline-flex' : 'none';
+
+            const logoutBtn = document.getElementById('patch-admin-logout-btn');
+            if (logoutBtn) logoutBtn.style.display = isAdmin ? 'inline-flex' : 'none';
+
+            const resetBtn = document.getElementById('clear-game-data-btn');
+            if (resetBtn) resetBtn.style.display = isAdmin ? 'none' : 'inline-flex';
+        }
+
+        function submitPatchAdminLogout() {
+            setPatchAdminSession(false);
+            showModalAlert('🚪 관리자 로그아웃되었습니다.');
+        }
+
+        function parsePatchBodyToListItems(body) {
+            const raw = body != null ? String(body) : '';
+            return raw.split(/\r?\n/).map(l => l.trim()).filter(Boolean);
+        }
+
+        function tryShowPatchNotesFromPayload(data) {
+            if (!data || data.version == null || String(data.version).trim() === '') return;
+            if (patchNotesUserModalOpen) return;
+            if (isNicknameModalBlockingPatch()) return;
+            if (!gameState.nickname) return;
+            const remoteV = String(data.version).trim();
+            const localV = gameState.lastSeenPatchVersion != null ? String(gameState.lastSeenPatchVersion).trim() : '';
+            if (localV === remoteV) {
+                return;
+            }
+            // [추가] 패치 이후 첫 접속 시 중앙 상자 띄우기
+            showModalAlert(`새로운 업데이트(${remoteV})가 있습니다! 우측 상단 '패치노트' 버튼을 눌러 확인해 주세요.`);
+            // 자동 팝업 대신 알림만 띄우고 확인을 눌러야 넘어가도록 함
+            // 만약 자동으로 띄우고 싶다면 아래 함수를 실행:
+            // showPatchNotesUserModal(data, remoteV);
+        }
+
+        function openLatestPatchNotes() {
+            PATCH_NOTES_LATEST_REF.once('value').then((snap) => {
+                const data = snap.val();
+                if (data && data.version) {
+                    showPatchNotesUserModal(data, String(data.version).trim());
+                } else {
+                    showNotification('📜 아직 등록된 패치노트가 없습니다.');
+                }
+            }).catch(() => {
+                showNotification('❌ 패치노트를 불러오는 데 실패했습니다.');
+            });
+        }
+
+        function showPatchNotesUserModal(data, remoteVersion) {
+            patchNotesUserModalOpen = true;
+            pendingPatchRemoteVersion = remoteVersion;
+            const overlay = document.getElementById('patch-notes-user-modal');
+            const verEl = document.getElementById('patch-notes-version-display');
+            const titleEl = document.getElementById('patch-notes-title-display');
+            const listEl = document.getElementById('patch-notes-body-list');
+            if (verEl) verEl.textContent = remoteVersion;
+            if (titleEl) titleEl.textContent = data.title ? String(data.title) : '업데이트 안내';
+            if (listEl) {
+                const lines = parsePatchBodyToListItems(data.body);
+                if (lines.length === 0) {
+                    listEl.innerHTML = '<li style="list-style:none;margin-left:0;color:#888;">(상세 내용이 없습니다.)</li>';
+                } else {
+                    listEl.innerHTML = lines.map(line => {
+                        const text = line.replace(/^\s*[-•*]\s*/, '');
+                        return `<li>${escapeHtmlPatch(text)}</li>`;
+                    }).join('');
+                }
+            }
+            if (overlay) overlay.style.display = 'flex';
+        }
+
+        function escapeHtmlPatch(s) {
+            return String(s)
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;');
+        }
+
+        function closePatchNotesUserModal() {
+            const overlay = document.getElementById('patch-notes-user-modal');
+            if (overlay) overlay.style.display = 'none';
+            patchNotesUserModalOpen = false;
+            pendingPatchRemoteVersion = null;
+        }
+
+        function confirmPatchNotesUserSeen() {
+            if (pendingPatchRemoteVersion != null) {
+                gameState.lastSeenPatchVersion = pendingPatchRemoteVersion;
+                saveGameState();
+            }
+            closePatchNotesUserModal();
+            // 패치노트를 확인했으므로 중앙 알림은 띄우지 않도록 업데이트
+        }
+
+        function schedulePatchNotesCheck() {
+            setTimeout(runPatchNotesCheck, 500);
+        }
+
+        async function runPatchNotesCheck() {
+            if (isNicknameModalBlockingPatch()) return;
+            if (!gameState.nickname) return;
+            try {
+                const snap = await PATCH_NOTES_LATEST_REF.once('value');
+                tryShowPatchNotesFromPayload(snap.val());
+            } catch (e) {
+                console.error('패치노트 확인 실패:', e);
+            }
+        }
+
+        function startPatchNotesRealtimeListener() {
+            if (patchNotesRealtimeStarted) return;
+            patchNotesRealtimeStarted = true;
+            PATCH_NOTES_LATEST_REF.on('value', (snap) => {
+                tryShowPatchNotesFromPayload(snap.val());
+            });
+        }
+
+        function openPatchAdminDeployModal() {
+            if (sessionStorage.getItem('patchAdminSession') !== '1') {
+                alert('먼저 관리자 로그인을 해주세요.');
+                return;
+            }
+            const m = document.getElementById('patch-admin-deploy-modal');
+            if (m) m.style.display = 'flex';
+            PATCH_NOTES_LATEST_REF.once('value').then((snap) => {
+                const v = snap.val();
+                const verEl = document.getElementById('patch-deploy-version');
+                const titEl = document.getElementById('patch-deploy-title');
+                const bodyEl = document.getElementById('patch-deploy-body');
+                if (v) {
+                    if (verEl) verEl.value = v.version != null ? String(v.version) : '';
+                    if (titEl) titEl.value = v.title != null ? String(v.title) : '';
+                    if (bodyEl) bodyEl.value = v.body != null ? String(v.body) : '';
+                }
+            }).catch(() => {});
+        }
+
+        function closePatchAdminDeployModal() {
+            const m = document.getElementById('patch-admin-deploy-modal');
+            if (m) m.style.display = 'none';
+        }
+
+        async function submitPatchDeploy() {
+            if (sessionStorage.getItem('patchAdminSession') !== '1') return;
+            const verEl = document.getElementById('patch-deploy-version');
+            const titEl = document.getElementById('patch-deploy-title');
+            const bodyEl = document.getElementById('patch-deploy-body');
+            const version = verEl ? verEl.value.trim() : '';
+            const title = titEl ? titEl.value.trim() : '';
+            const body = bodyEl ? bodyEl.value.trim() : '';
+            if (!version) {
+                alert('버전 번호를 입력해주세요.');
+                return;
+            }
+            if (!title) {
+                alert('제목을 입력해주세요.');
+                return;
+            }
+            const btn = document.getElementById('patch-deploy-submit');
+            if (btn) btn.disabled = true;
+            try {
+                await PATCH_NOTES_LATEST_REF.set({
+                    version,
+                    title,
+                    body: body || '',
+                    updatedAt: Date.now()
+                });
+                showModalAlert('📢 패치노트가 배포되었습니다.');
+                closePatchAdminDeployModal();
+            } catch (e) {
+                console.error(e);
+                alert('배포 실패: Firebase 규칙에서 patchNotes/latest 쓰기를 허용했는지 확인하세요.');
+            } finally {
+                if (btn) btn.disabled = false;
+            }
+        }
+
+        function initPatchNotesUI() {
+            refreshPatchAdminPanelButton();
+            const confirmBtn = document.getElementById('patch-notes-confirm-btn');
+            if (confirmBtn) confirmBtn.addEventListener('click', confirmPatchNotesUserSeen);
+            const panelBtn = document.getElementById('patch-admin-panel-btn');
+            if (panelBtn) panelBtn.addEventListener('click', openPatchAdminDeployModal);
+            const deployCancel = document.getElementById('patch-deploy-cancel');
+            const deploySubmit = document.getElementById('patch-deploy-submit');
+            if (deployCancel) deployCancel.addEventListener('click', closePatchAdminDeployModal);
+            if (deploySubmit) deploySubmit.addEventListener('click', () => submitPatchDeploy());
+            const deployModal = document.getElementById('patch-admin-deploy-modal');
+            if (deployModal) {
+                deployModal.addEventListener('click', (ev) => {
+                    if (ev.target === deployModal) closePatchAdminDeployModal();
+                });
+            }
+        }
+
+        function openWelcomeCloudLoadModal() {
+            const modal = document.getElementById('welcome-cloud-load-modal');
+            const nickInput = document.getElementById('welcome-cloud-nickname');
+            const pinInput = document.getElementById('welcome-cloud-pin');
+            if (nickInput) nickInput.value = '';
+            if (pinInput) pinInput.value = '';
+            if (modal) modal.style.display = 'flex';
+            setTimeout(() => { if (nickInput) nickInput.focus(); }, 100);
+        }
+
+        function closeWelcomeCloudLoadModal() {
+            const modal = document.getElementById('welcome-cloud-load-modal');
+            if (modal) modal.style.display = 'none';
+        }
+
+        async function submitWelcomeCloudLoad() {
+            const nickInput = document.getElementById('welcome-cloud-nickname');
+            const pinInput = document.getElementById('welcome-cloud-pin');
+            const submitBtn = document.getElementById('welcome-cloud-submit-btn');
+            const nickname = nickInput ? nickInput.value.trim() : '';
+            const password = pinInput ? pinInput.value.trim() : '';
+            const ok = await performCloudBackupLoadWithCredentials(nickname, password, submitBtn);
+            if (ok) {
+                closeWelcomeCloudLoadModal();
+                const nm = document.getElementById('nickname-modal');
+                if (nm) nm.style.display = 'none';
+                syncUserWithFirebase(true);
+                updateRankingDisplay();
+            }
+        }
+
+        async function runCloudBackupSave() {
+            const passInput = document.getElementById('cloud-password-input');
+            const submitBtn = document.getElementById('cloud-backup-submit-btn');
+            const { nickname, error: nickErr } = getNicknameForCloudBackup();
+            const password = passInput ? passInput.value.trim() : '';
+            if (nickErr) {
+                alert(nickErr);
+                return;
+            }
+            const pinErr = validateCloudPin(password);
+            if (pinErr) {
+                alert(pinErr);
+                return;
+            }
+            const userRef = database.ref('users/' + nickname);
+            if (submitBtn) submitBtn.disabled = true;
+            try {
+                const snapshot = await userRef.once('value');
+                const gameData = buildCloudGameDataPayload();
+                if (!snapshot.exists()) {
+                    await userRef.set({
+                        password: password,
+                        gameData: gameData,
+                        updatedAt: Date.now()
+                    });
+                    saveGameState();
+                    showNotification('☁️ 클라우드에 새로 저장했습니다.');
+                    closeCloudBackupModal();
+                } else {
+                    const existing = snapshot.val();
+                    const storedPass = existing && existing.password != null ? String(existing.password) : '';
+                    if (storedPass !== password) {
+                        alert('🔒 PIN이 일치하지 않아 저장할 수 없습니다');
+                        return;
+                    }
+                    await userRef.update({
+                        gameData: gameData,
+                        updatedAt: Date.now()
+                    });
+                    saveGameState();
+                    showNotification('☁️ 클라우드 데이터를 덮어썼습니다.');
+                    closeCloudBackupModal();
+                }
+            } catch (e) {
+                console.error('Cloud save error:', e);
+                alert('클라우드 저장 중 오류가 발생했습니다. 네트워크와 Firebase 규칙을 확인해주세요.');
+            } finally {
+                if (submitBtn) submitBtn.disabled = false;
+            }
+        }
+
+        async function runCloudBackupLoad() {
+            const nickInput = document.getElementById('cloud-nickname-input');
+            const passInput = document.getElementById('cloud-password-input');
+            const submitBtn = document.getElementById('cloud-backup-submit-btn');
+            
+            let nickname = '';
+            if (nickInput && nickInput.style.display !== 'none') {
+                nickname = nickInput.value.trim();
+            } else {
+                const { nickname: currentNick, error: nickErr } = getNicknameForCloudBackup();
+                if (nickErr) {
+                    alert(nickErr);
+                    return;
+                }
+                nickname = currentNick;
+            }
+            
+            const password = passInput ? passInput.value.trim() : '';
+            const ok = await performCloudBackupLoadWithCredentials(nickname, password, submitBtn);
+            if (ok) closeCloudBackupModal();
+        }
+
+        function initCloudBackupUI() {
+            const openSave = document.getElementById('cloud-open-save-btn');
+            const openLoad = document.getElementById('cloud-open-load-btn');
+            const cancelBtn = document.getElementById('cloud-backup-cancel-btn');
+            const submitBtn = document.getElementById('cloud-backup-submit-btn');
+            const modal = document.getElementById('cloud-backup-modal');
+            if (openSave) openSave.addEventListener('click', () => openCloudBackupModal('save'));
+            if (openLoad) openLoad.addEventListener('click', () => openCloudBackupModal('load'));
+            if (cancelBtn) cancelBtn.addEventListener('click', closeCloudBackupModal);
+            if (submitBtn) {
+                submitBtn.addEventListener('click', async () => {
+                    if (cloudBackupModalMode === 'load') await runCloudBackupLoad();
+                    else await runCloudBackupSave();
+                });
+            }
+            if (modal) {
+                modal.addEventListener('click', (ev) => {
+                    if (ev.target === modal) closeCloudBackupModal();
+                });
+            }
+            const passInput = document.getElementById('cloud-password-input');
+            const nickInput = document.getElementById('cloud-nickname-input');
+            if (passInput) {
+                passInput.addEventListener('input', () => {
+                    passInput.value = passInput.value.replace(/\D/g, '').slice(0, 4);
+                });
+            }
+            const onEnter = (ev) => {
+                if (ev.key === 'Enter') {
+                    ev.preventDefault();
+                    if (cloudBackupModalMode === 'load') runCloudBackupLoad();
+                    else runCloudBackupSave();
+                }
+            };
+            if (passInput) passInput.addEventListener('keydown', onEnter);
+            if (nickInput) nickInput.addEventListener('keydown', onEnter);
+
+            const welcomeModal = document.getElementById('welcome-cloud-load-modal');
+            const welcomeCancel = document.getElementById('welcome-cloud-cancel-btn');
+            const welcomeSubmit = document.getElementById('welcome-cloud-submit-btn');
+            const welcomeNick = document.getElementById('welcome-cloud-nickname');
+            const welcomePin = document.getElementById('welcome-cloud-pin');
+            if (welcomeCancel) welcomeCancel.addEventListener('click', closeWelcomeCloudLoadModal);
+            if (welcomeSubmit) welcomeSubmit.addEventListener('click', () => submitWelcomeCloudLoad());
+            if (welcomeModal) {
+                welcomeModal.addEventListener('click', (ev) => {
+                    if (ev.target === welcomeModal) closeWelcomeCloudLoadModal();
+                });
+            }
+            if (welcomePin) {
+                welcomePin.addEventListener('input', () => {
+                    welcomePin.value = welcomePin.value.replace(/\D/g, '').slice(0, 4);
+                });
+            }
+            const welcomeEnter = (ev) => {
+                if (ev.key === 'Enter') {
+                    ev.preventDefault();
+                    submitWelcomeCloudLoad();
+                }
+            };
+            if (welcomeNick) welcomeNick.addEventListener('keydown', welcomeEnter);
+            if (welcomePin) welcomePin.addEventListener('keydown', welcomeEnter);
+        }
+
         // 날씨 효과 설명 가져오기
         function getWeatherEffectDescription(weatherEmoji) {
             const weatherEffects = {
@@ -2625,38 +3742,11 @@
             gameState.emptySlots = Math.max(0, gameState.totalSlots - gameState.usedSlots);
         }
 
-        // 현재 5분 주기에 맞춰 실시간 게임 시각을 계산하여 표시 (사용자 요청)
-        function getDynamicGameTime() {
-            const now = Date.now();
-            const elapsedMs = now - gameState.lastAutoProgress;
-            const fiveMinutesMs = 5 * 60 * 1000;
-            
-            // 0 ~ 1.0 (5분 내 진행도)
-            const ratio = Math.min(1.0, elapsedMs / fiveMinutesMs);
-            
-            // 6:00 AM(360분) ~ 12:00 AM(다음날 자정, 1440분)
-            const startMin = 6 * 60;
-            const endMin = 24 * 60;
-            const totalDayMin = endMin - startMin; // 1080분
-            
-            const currentMin = Math.floor(startMin + ratio * totalDayMin);
-            
-            // 포맷팅 (HH:MM AM/PM)
-            let h = Math.floor(currentMin / 60) % 24;
-            const m = currentMin % 60;
-            const ampm = h >= 12 ? 'PM' : 'AM';
-            h = h % 12;
-            if (h === 0) h = 12;
-            const mStr = m < 10 ? '0' + m : m;
-            
-            return `${h}:${mStr} ${ampm}`;
-        }
-
         // 화면 업데이트
         function updateDisplay() {
             syncSlotState();
             document.getElementById('current-day').textContent = gameState.day;
-            document.getElementById('current-time').textContent = getDynamicGameTime();
+            // 시계 제거됨 (getDynamicGameTime 호출 제거)
             document.getElementById('player-gold').textContent = gameState.gold;
             document.getElementById('player-level').textContent = gameState.level;
             
@@ -4791,8 +5881,8 @@
 
         // 암시장 아이템 생성
         function generateBlackMarket() {
-            // 8.5% 확률로 활성화 (사용자 요청에 맞춰 상향 조정)
-            if (Math.random() > 0.08) {
+            // 20% 확률로 활성화 (사용자 요청에 맞춰 상향 조정)
+            if (Math.random() > 0.2) {
                 gameState.blackMarket.active = false;
                 gameState.blackMarket.items = [];
                 return;
@@ -4836,7 +5926,14 @@
                     description: '사용 시 내일 발생할 뉴스를 직접 선택할 수 있습니다. 시세 차익을 노리세요.',
                     price: Math.floor(1500 + Math.random() * 1500)
                 },
-            
+                {
+                    type: 'special_growth',
+                    name: '🧪 신비한 농축 촉진제',
+                    emoji: '⚡',
+                    weight: 20,
+                    description: '심어진 모든 작물의 성장을 즉시 2일씩 앞당깁니다.',
+                    price: 1500
+                }
             ];
 
             const selectedItems = [];
@@ -5693,14 +6790,15 @@
                 let items = [];
                 snapshot.forEach((childSnapshot) => {
                     const data = childSnapshot.val();
-                    if (data) {
-                        items.push({
-                            nickname: data.nickname || childSnapshot.key,
-                            level: data.level || 1,
-                            gold: data.gold || 0,
-                            timestamp: data.timestamp || Date.now()
-                        });
-                    }
+                    if (!data) return;
+                    const nick = data.nickname != null ? String(data.nickname).trim() : '';
+                    if (!nick) return;
+                    items.push({
+                        nickname: nick,
+                        level: data.level || 1,
+                        gold: data.gold || 0,
+                        timestamp: data.timestamp || Date.now()
+                    });
                 });
                 
                 // 내림차순 정렬 (level 높은 순, 같으면 gold 많은 순)
@@ -5754,7 +6852,7 @@
                 <button class="back-button" onclick="showMainMenu()">← 뒤로 가기</button>
                 <div style="margin-bottom: 25px;">
                     <h2 style="font-size: 28px; margin-bottom: 8px; color: #FFD700; text-shadow: 0 2px 4px rgba(0,0,0,0.3);">🏆 전체 관리자 랭킹</h2>
-                    <p style="color: #ddd; font-size: 14px;">마법 온실에서 활약 중인 상위 관리자들입니다.</p>
+                    <p style="color: #ddd; font-size: 14px;">명예의 전당에 <strong>직접 기록을 등록한</strong> 관리자만 표시됩니다.</p>
                 </div>
                 
                 <div class="news-history-container">
@@ -5797,17 +6895,18 @@
                 </div>
             `;
 
-            database.ref('users').once('value', (snapshot) => {
+            database.ref('rankings').once('value', (snapshot) => {
                 let items = [];
                 snapshot.forEach((childSnapshot) => {
                     const data = childSnapshot.val();
-                    if (data) {
-                        items.push({
-                            nickname: data.nickname || "무명관리자",
-                            level: data.level || 1,
-                            gold: data.gold || 0
-                        });
-                    }
+                    if (!data) return;
+                    const nick = data.nickname != null ? String(data.nickname).trim() : '';
+                    if (!nick) return;
+                    items.push({
+                        nickname: nick,
+                        level: data.level || 1,
+                        gold: data.gold || 0
+                    });
                 });
 
                 // 1. 레벨 랭킹
@@ -5875,8 +6974,13 @@
                     </div>`;
             } else {
                 let html = '';
-                // 최신순으로 정렬하여 표시
-                [...gameState.newsHistory].reverse().forEach(item => {
+                const sortedNews = [...gameState.newsHistory].sort((a, b) => {
+                    if (b.day !== a.day) return b.day - a.day;
+                    const edA = a.effectiveDay != null ? a.effectiveDay : a.day;
+                    const edB = b.effectiveDay != null ? b.effectiveDay : b.day;
+                    return edB - edA;
+                });
+                sortedNews.forEach(item => {
                     const isUpcoming = item.effectiveDay > gameState.day;
                     const isActive = item.effectiveDay === gameState.day;
                     
@@ -5911,6 +7015,10 @@
                 });
                 list.innerHTML = html;
             }
+
+            window.scrollTo({ top: 0, left: 0, behavior: 'auto' });
+            const mainContainer = document.querySelector('.container');
+            if (mainContainer) mainContainer.scrollIntoView({ block: 'start', behavior: 'auto' });
         }
 
         // 메인 메뉴 표시
@@ -5924,29 +7032,41 @@
             renderPlantSlots();
         }
 
-        // 알림 표시 (개선된 중앙 상단 스택 방식 - 최대 3개 제한)
+        // 알림 표시 (상단 스택 방식 복구)
         function showNotification(message) {
             const container = document.getElementById('notification-container');
             if (!container) return;
 
-            // 사용자 요청: 화면을 너무 가리지 않도록 알림 개수를 3개로 제한
             while (container.children.length >= 3) {
-                container.lastChild.remove(); // 가장 오래된 알림 삭제
+                container.lastChild.remove();
             }
 
             const notification = document.createElement('div');
             notification.className = 'notification';
             notification.textContent = message;
             
-            // 컨테이너 맨 위에 추가 (최신 알림이 위로)
             container.prepend(notification);
             
-            // 애니메이션 종료 후 요소 제거 (총 3초: 등장 0.4 + 대기 2.2 + 퇴장 0.4)
             setTimeout(() => {
                 if (notification.parentNode === container) {
                     notification.remove();
                 }
             }, 3000);
+        }
+
+        // 중앙 확인 모달 알림 표시 (관리자용)
+        function showModalAlert(message) {
+            const overlay = document.getElementById('modal-alert-overlay');
+            const msgBox = document.getElementById('modal-alert-message');
+            if (overlay && msgBox) {
+                msgBox.textContent = message;
+                overlay.style.display = 'flex';
+            }
+        }
+
+        function closeModalAlert() {
+            const overlay = document.getElementById('modal-alert-overlay');
+            if (overlay) overlay.style.display = 'none';
         }
 
         // 알림 권한 상태 확인 및 표시
@@ -5994,32 +7114,18 @@
             const minutes = Math.floor(remainingTime / (60 * 1000));
             const seconds = Math.floor((remainingTime % (60 * 1000)) / 1000);
             
-            // 메뉴 카드의 타이머 표시 업데이트
+            // 상단 Day 표시 옆의 타이머 업데이트
             const timerDisplay = document.getElementById('timer-display');
             if (timerDisplay) {
                 timerDisplay.textContent = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
                 
-                // 1분 이하일 때 펄스 효과 추가
-                const timerMenuCard = document.getElementById('timer-menu-card');
+                // 1분 이하일 때 펄스 효과 및 색상 변경 (기존 #FF4500 대신 좀 더 차분한 어두운 빨강)
                 if (remainingTime <= 60000) {
-                    timerMenuCard.classList.add('timer-pulse');
+                    timerDisplay.style.color = '#c0392b';
+                    timerDisplay.style.animation = 'timer-pulse 1s infinite';
                 } else {
-                    timerMenuCard.classList.remove('timer-pulse');
-                }
-            }
-            
-            // 사이드바 타이머도 업데이트 (기존 기능 유지)
-            const sidebarTimer = document.getElementById('sidebar-timer');
-            if (sidebarTimer) {
-                const sidebarTimerDisplay = document.getElementById('next-day-timer');
-                if (sidebarTimerDisplay) {
-                    sidebarTimerDisplay.textContent = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
-                    
-                    if (remainingTime <= 60000) {
-                        sidebarTimer.classList.add('timer-pulse');
-                    } else {
-                        sidebarTimer.classList.remove('timer-pulse');
-                    }
+                    timerDisplay.style.color = '#000';
+                    timerDisplay.style.animation = 'none';
                 }
             }
         }
@@ -6126,6 +7232,8 @@
         }
 
         // 게임 시작
+        initPatchNotesUI();
+        initCloudBackupUI();
         initGame();
 
         function setupMobileBottomBar() {
