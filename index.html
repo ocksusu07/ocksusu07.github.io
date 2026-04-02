@@ -2281,7 +2281,7 @@
                         <div id="xp-text" style="position: absolute; width: 100%; text-align: center; font-size: 9px; color: white; line-height: 12px; text-shadow: 0 0 2px black;">0/100 XP</div>
                     </div>
                 </div>
-                <div style="font-size: 1.1em; font-weight: bold; margin-bottom: 5px; color: #333;">— Day <span id="current-day">1</span> (<span id="timer-display" style="color: #000; font-size: 1.2em; text-shadow: none;">--:--</span>) —</div>
+                <div style="font-size: 1.1em; font-weight: bold; margin-bottom: 5px; color: #fff; text-shadow: 0 2px 4px rgba(0,0,0,0.3);">— Day <span id="current-day">1</span> (<span id="timer-display" style="color: #FFD700; font-size: 1.3em; text-shadow: 0 0 10px rgba(255, 215, 0, 0.5);">--:--</span>) —</div>
                 <div>Gold: 💎 <span id="player-gold">100</span></div>
                 <div>Slots: <span id="used-slots">0</span>/<span id="total-slots">2</span> (Empty slots: <span id="empty-slots">0</span>)</div>
                 <div>Weather: <span id="current-weather">☀️</span> <span id="weather-name">Sunny</span></div>
@@ -7154,12 +7154,12 @@
             if (timerDisplay) {
                 timerDisplay.textContent = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
                 
-                // 1분 이하일 때 펄스 효과 및 색상 변경 (기존 #FF4500 대신 좀 더 차분한 어두운 빨강)
+                // 1분 이하일 때 펄스 효과 및 색상 변경 (기존 #FF4500 대신 좀 더 선명한 빨강)
                 if (remainingTime <= 60000) {
-                    timerDisplay.style.color = '#c0392b';
+                    timerDisplay.style.color = '#ff4757';
                     timerDisplay.style.animation = 'timer-pulse 1s infinite';
                 } else {
-                    timerDisplay.style.color = '#000';
+                    timerDisplay.style.color = '#FFD700';
                     timerDisplay.style.animation = 'none';
                 }
             }
