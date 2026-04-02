@@ -73,7 +73,7 @@
         }
 
         .container {
-            max-width: 1200px; /* 27인치 표준 해상도 최적화 (1500px -> 1200px) */
+            max-width: 1100px; /* 27인치 표준 해상도 최적화 (1500px -> 1200px -> 1100px) */
             width: 95%;
             margin: 0 auto;
             border-radius: 20px;
@@ -644,11 +644,11 @@
         }
 
         .left-sidebar {
-            left: calc(50% - 600px - 135px); /* 1200px 컨테이너 기준 */
+            left: calc(50% - 550px - 120px - 20px); /* 1100px 컨테이너 기준, 20px 갭 */
         }
 
         .right-sidebar {
-            right: calc(50% - 600px - 135px); /* 1200px 컨테이너 기준 */
+            right: calc(50% - 550px - 120px - 20px); /* 1100px 컨테이너 기준, 20px 갭 */
         }
 
         /* 해상도별 사이드바 위치 조정 */
@@ -1620,9 +1620,9 @@
         .global-ranking-board {
             position: fixed;
             top: 35%;
-            transform: translateY(-50%);
-            left: calc(50% - 600px - 135px - 450px);
-            width: 380px;
+            left: calc(50% - 550px - 120px - 20px); /* 버튼 그룹(사이드바)의 왼쪽에 위치 */
+            transform: translateY(-50%) translateX(-300px); /* 자신의 너비(280px) + 간격(20px)만큼 왼쪽으로 이동 */
+            width: 280px;
             z-index: 999;
             transition: all 0.3s ease;
         }
@@ -1632,7 +1632,7 @@
                 left: 5px;
                 top: 15px;
                 transform: none;
-                width: 340px;
+                width: 280px;
             }
         }
 
@@ -1663,6 +1663,7 @@
             list-style: none;
             padding: 0;
             margin: 0;
+            font-size: 13px;
         }
         .ranking-item {
             display: flex;
@@ -1682,8 +1683,22 @@
         .ranking-info {
             flex-grow: 1;
             display: flex;
-            justify-content: space-between;
+            flex-direction: column; /* 세로 정렬 */
+            justify-content: center; /* 수직 중앙 정렬 */
             padding-left: 10px;
+        }
+
+        .ranking-main-info {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            width: 100%;
+        }
+
+        .ranking-sub-info {
+            margin-top: 2px; /* 위쪽 여백 */
+            font-size: 0.9em;
+            color: #ccc;
         }
         .ranking-nickname {
             font-weight: bold;
@@ -1694,6 +1709,7 @@
         .ranking-stats {
             font-size: 0.9em;
             color: #ccc;
+            white-space: nowrap;
         }
         .toggle-btn {
             background: none;
@@ -2157,7 +2173,7 @@
     <div class="global-ranking-board">
         <div class="ranking-container">
             <div class="ranking-header">
-                <h2 style="margin: 0; font-size: 16px; color: #FFD700; text-shadow: 0 0 5px rgba(0,0,0,0.8);">🏆 명예의 전당</h2>
+                <h2 style="margin: 0; font-size: 15px; color: #FFD700; text-shadow: 0 0 5px rgba(0,0,0,0.8);">🏆 명예의 전당</h2>
                 <button class="toggle-btn" onclick="toggleRanking()"><span id="ranking-toggle-icon">▼</span></button>
             </div>
             <ul id="ranking-list" class="ranking-list">
@@ -6883,8 +6899,13 @@
                         <li class="ranking-item">
                             <span class="ranking-rank">${rankEmoji}</span>
                             <div class="ranking-info">
-                                <span class="ranking-nickname">${item.nickname}</span>
-                                <span class="ranking-stats">Lv.${item.level} | 💎 ${item.gold.toLocaleString()}</span>
+                                <div class="ranking-main-info">
+                                    <span class="ranking-nickname">${item.nickname}</span>
+                                    <span class="ranking-stats">Lv. ${item.level}</span>
+                                </div>
+                                <div class="ranking-sub-info">
+                                    <span class="ranking-gold">💰 ${item.gold.toLocaleString()}</span>
+                                </div>
                             </div>
                         </li>
                     `;
