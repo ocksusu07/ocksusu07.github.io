@@ -3000,7 +3000,10 @@
         }
 
         // 닉네임 설정 확인 (커스텀 모달용 - 중복 체크 추가)
+        let isNicknameChecking = false; // 중복 클릭 방지
         async function confirmNickname() {
+            if (isNicknameChecking) return;
+            
             const input = document.getElementById('nickname-input');
             const nickname = input ? input.value.trim() : '';
             
@@ -3014,6 +3017,7 @@
                 return;
             }
 
+            isNicknameChecking = true;
             // [추가] 닉네임 중복 체크 (Firebase)
             const confirmBtn = document.querySelector('#nickname-modal button');
             if (confirmBtn) {
@@ -3022,20 +3026,28 @@
             }
 
             try {
-                const userRef = database.ref('users/' + nickname);
-                const snapshot = await userRef.once('value');
+                // [수정] 닉네임 중복 체크를 위해 rankings와 users 노드 모두 확인
+                // 1. rankings 노드에서 해당 닉네임이 존재하는지 쿼리
+                const rankingSnapshot = await database.ref('rankings').orderByChild('nickname').equalTo(nickname).once('value');
                 
-                if (snapshot.exists()) {
+                // 2. users 노드에서 해당 닉네임이 존재하는지 쿼리 (playerId를 키로 쓰는 경우 대비)
+                const usersQuerySnapshot = await database.ref('users').orderByChild('nickname').equalTo(nickname).once('value');
+                
+                // 3. users 노드에 해당 닉네임이 키로 존재하는지 직접 확인 (클라우드 저장용)
+                const userSnapshot = await database.ref('users/' + nickname).once('value');
+                
+                if (rankingSnapshot.exists() || usersQuerySnapshot.exists() || userSnapshot.exists()) {
                     showModalAlert(`❌ '${nickname}'은(는) 이미 사용 중인 이름입니다. 다른 이름을 입력해주세요.`);
                     if (confirmBtn) {
                         confirmBtn.disabled = false;
                         confirmBtn.textContent = '시작하기';
                     }
+                    isNicknameChecking = false;
                     return;
                 }
 
                 // 중복되지 않은 경우 진행
-                gameState.nickname = nickname.substring(0, 6);
+                gameState.nickname = nickname; 
                 const modal = document.getElementById('nickname-modal');
                 if (modal) modal.style.display = 'none';
                 
@@ -3054,6 +3066,8 @@
                     confirmBtn.disabled = false;
                     confirmBtn.textContent = '시작하기';
                 }
+            } finally {
+                isNicknameChecking = false;
             }
         }
 
