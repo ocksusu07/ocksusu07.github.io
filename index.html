@@ -1643,13 +1643,13 @@
         }
 
         .ranking-container {
-            background: rgba(0, 0, 0, 0.6);
-            backdrop-filter: blur(15px);
+            background: rgba(15, 15, 15, 0.95); /* 배경색을 훨씬 더 어둡고 불투명하게 변경 */
+            backdrop-filter: blur(20px);
             border-radius: 15px;
             padding: 18px;
-            border: 1px solid rgba(255, 215, 0, 0.3);
+            border: 1px solid rgba(255, 215, 0, 0.5); /* 테두리를 조금 더 선명하게 */
             color: #fff;
-            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+            box-shadow: 0 12px 40px rgba(0, 0, 0, 0.5);
         }
         .ranking-header {
             display: flex;
@@ -1689,6 +1689,7 @@
             font-weight: bold;
             color: #FFD700;
             margin-right: 15px;
+            text-shadow: 0 0 3px rgba(0, 0, 0, 0.8); /* 닉네임 가독성을 위해 그림자 추가 */
         }
         .ranking-stats {
             font-size: 0.9em;
@@ -1701,6 +1702,24 @@
             cursor: pointer;
             font-size: 1.2em;
             padding: 5px;
+        }
+
+        .register-btn {
+            width: 100%;
+            margin-top: 15px;
+            padding: 12px;
+            border-radius: 10px;
+            border: none;
+            background: linear-gradient(135deg, #FFD700, #FFA500);
+            color: #000;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.2s;
+            box-shadow: 0 4px 15px rgba(255, 215, 0, 0.2);
+        }
+        .register-btn:hover {
+            transform: scale(1.02);
+            box-shadow: 0 6px 20px rgba(255, 215, 0, 0.4);
         }
 
         /* 공용 섹션 레이아웃 */
@@ -2138,7 +2157,7 @@
     <div class="global-ranking-board">
         <div class="ranking-container">
             <div class="ranking-header">
-                <h2 style="margin: 0; font-size: 16px; color: #FFD700;">🏆 명예의 전당</h2>
+                <h2 style="margin: 0; font-size: 16px; color: #FFD700; text-shadow: 0 0 5px rgba(0,0,0,0.8);">🏆 명예의 전당</h2>
                 <button class="toggle-btn" onclick="toggleRanking()"><span id="ranking-toggle-icon">▼</span></button>
             </div>
             <ul id="ranking-list" class="ranking-list">
@@ -2149,8 +2168,8 @@
     </div>
 
     <!-- 닉네임 설정 모달 (커스텀) -->
-    <div id="nickname-modal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 10000; backdrop-filter: blur(10px); align-items: center; justify-content: center;">
-        <div style="background: rgba(255, 255, 255, 0.1); padding: 40px; border-radius: 25px; border: 1px solid rgba(255, 255, 255, 0.2); width: 400px; text-align: center; box-shadow: 0 20px 60px rgba(0,0,0,0.5); animation: modal-fade-in 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);">
+    <div id="nickname-modal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); z-index: 10000; backdrop-filter: blur(15px); align-items: center; justify-content: center;">
+        <div style="background: rgba(20, 20, 20, 0.95); padding: 40px; border-radius: 25px; border: 2px solid rgba(255, 215, 0, 0.4); width: 400px; text-align: center; box-shadow: 0 20px 60px rgba(0,0,0,0.7); animation: modal-fade-in 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);">
             <h2 style="color: #FFD700; margin-bottom: 15px; font-size: 24px;">🌿 관리자 등록</h2>
             <p style="color: #ddd; margin-bottom: 25px; font-size: 14px; line-height: 1.6;">마법 온실에 오신 것을 환영합니다!<br>사용하실 관리자 이름을 입력해주세요.</p>
             
@@ -2436,8 +2455,8 @@
             plantedCrops: [],
             gears: [], // 기어 인벤토리
             lastSave: Date.now(),
-            nextDayCost: 20, // 다음날 스킵 비용
-            slotCost: 10, // 슬롯 구매 비용
+            nextDayCost: 50, // 다음날 스킵 비용 (황금 밸런스 조정)
+            slotCost: 100, // 슬롯 구매 비용 (황금 밸런스 조정)
             activeEvents: [], // 활성 이벤트 목록
             news: [], // 오늘 활성화된 뉴스 목록 (어제 발생한 뉴스)
             upcomingNews: [], // 오늘 발생한 뉴스 (내일 활성화될 예정)
@@ -5584,7 +5603,9 @@
             
             gameState.gold -= cost;
             gameState.totalSlots++;
-            gameState.slotCost += 10; // 다음 슬롯 비용 증가
+            // 슬롯 구매 비용 황금 밸런스: 증가폭이 50씩 늘어나는 구조 (50, 100, 150...)
+            const increment = (gameState.totalSlots - 1) * 50;
+            gameState.slotCost += increment;
             
             showNotification(`🏡 온실 슬롯을 구매했습니다! +1 슬롯, -${cost} 골드`);
             
@@ -6436,10 +6457,10 @@
                                      `• ⌚ 낡은 회중시계 효과로 이번 스킵은 무료입니다!`;
                 if (confirm(confirmMessage)) {
                     gameState.nextDayCostFreeOnce = false;
-                    // 비용 없이 진행하되 nextDayCost는 초기화
-                    gameState.nextDayCost = 20;
+                    // 비용 없이 진행하되 nextDayCost는 초기화 (황금 밸런스: 50으로 초기화)
+                    gameState.nextDayCost = 50;
                     proceedToNextDay(false); // 비용 없이
-                    showNotification(`⌚ 회중시계 효과! 스킵 비용이 0골드였으며, 다음 스킵 비용이 20골드로 초기화되었습니다.`);
+                    showNotification(`⌚ 회중시계 효과! 스킵 비용이 0골드였으며, 다음 스킵 비용이 50골드로 초기화되었습니다.`);
                 }
                 return;
             }
@@ -6572,8 +6593,8 @@
                     return false;
                 }
                 gameState.gold -= cost;
-                // 수동 스킵 시에만 비용 증가 (사용자 요청)
-                gameState.nextDayCost += 5;
+                // 수동 스킵 시 비용 대폭 하향(너프) - 황금 밸런스: 20씩 증가
+                gameState.nextDayCost += 20;
             }
             
             gameState.day++;
@@ -6899,44 +6920,44 @@
             
             contentArea.innerHTML = `
                 <button class="back-button" onclick="showMainMenu()">← 뒤로 가기</button>
-                <div style="margin-bottom: 25px;">
-                    <h2 style="font-size: 28px; margin-bottom: 8px; color: #FFD700; text-shadow: 0 2px 4px rgba(0,0,0,0.3);">🏆 전체 관리자 랭킹</h2>
-                    <p style="color: #ddd; font-size: 14px;">명예의 전당에 <strong>직접 기록을 등록한</strong> 관리자만 표시됩니다.</p>
+                <div style="margin-bottom: 25px; background: rgba(0, 0, 0, 0.7); padding: 25px; border-radius: 15px; border: 1px solid rgba(255, 215, 0, 0.3);">
+                    <h2 style="font-size: 28px; margin-bottom: 8px; color: #FFD700; text-shadow: 0 2px 8px rgba(0,0,0,0.8);">🏆 전체 관리자 랭킹</h2>
+                    <p style="color: #eee; font-size: 14px; text-shadow: 0 1px 3px rgba(0,0,0,0.5);">명예의 전당에 <strong>직접 기록을 등록한</strong> 관리자만 표시됩니다.</p>
                 </div>
                 
                 <div class="news-history-container">
-                    <div class="news-section">
-                        <h3 style="color: #FFD700; margin-bottom: 15px; border-bottom: 1px solid #FFD700; padding-bottom: 8px;">📊 레벨 순위 (TOP 20)</h3>
+                    <div class="news-section" style="background: rgba(0, 0, 0, 0.6); padding: 20px; border-radius: 15px; border: 1px solid rgba(255, 255, 255, 0.1);">
+                        <h3 style="color: #FFD700; margin-bottom: 15px; border-bottom: 2px solid #FFD700; padding-bottom: 8px; text-shadow: 0 2px 4px rgba(0,0,0,0.5);">📊 레벨 순위 (TOP 20)</h3>
                         <div style="overflow-x: auto;">
                             <table style="width: 100%;">
                                 <thead>
                                     <tr>
-                                        <th style="width: 50px;">순위</th>
-                                        <th>관리자</th>
-                                        <th>레벨</th>
-                                        <th>자산</th>
+                                        <th style="width: 50px; background: rgba(0,0,0,0.3); color: #fff;">순위</th>
+                                        <th style="background: rgba(0,0,0,0.3); color: #fff;">관리자</th>
+                                        <th style="background: rgba(0,0,0,0.3); color: #fff;">레벨</th>
+                                        <th style="background: rgba(0,0,0,0.3); color: #fff;">자산</th>
                                     </tr>
                                 </thead>
                                 <tbody id="total-level-ranking-body">
-                                    <tr><td colspan="4" style="text-align: center; padding: 20px;">불러오는 중...</td></tr>
+                                    <tr><td colspan="4" style="text-align: center; padding: 20px; color: #fff;">불러오는 중...</td></tr>
                                 </tbody>
                             </table>
                         </div>
                     </div>
-                    <div class="ranking-section">
-                        <h3 style="color: #FFD700; margin-bottom: 15px; border-bottom: 1px solid #FFD700; padding-bottom: 8px;">💰 자산 순위 (TOP 20)</h3>
+                    <div class="ranking-section" style="background: rgba(0, 0, 0, 0.6); padding: 20px; border-radius: 15px; border: 1px solid rgba(255, 255, 255, 0.1);">
+                        <h3 style="color: #FFD700; margin-bottom: 15px; border-bottom: 2px solid #FFD700; padding-bottom: 8px; text-shadow: 0 2px 4px rgba(0,0,0,0.5);">💰 자산 순위 (TOP 20)</h3>
                         <div style="overflow-x: auto;">
                             <table style="width: 100%;">
                                 <thead>
                                     <tr>
-                                        <th style="width: 50px;">순위</th>
-                                        <th>관리자</th>
-                                        <th>자산</th>
-                                        <th>레벨</th>
+                                        <th style="width: 50px; background: rgba(0,0,0,0.3); color: #fff;">순위</th>
+                                        <th style="background: rgba(0,0,0,0.3); color: #fff;">관리자</th>
+                                        <th style="background: rgba(0,0,0,0.3); color: #fff;">자산</th>
+                                        <th style="background: rgba(0,0,0,0.3); color: #fff;">레벨</th>
                                     </tr>
                                 </thead>
                                 <tbody id="total-gold-ranking-body">
-                                    <tr><td colspan="4" style="text-align: center; padding: 20px;">불러오는 중...</td></tr>
+                                    <tr><td colspan="4" style="text-align: center; padding: 20px; color: #fff;">불러오는 중...</td></tr>
                                 </tbody>
                             </table>
                         </div>
@@ -6975,44 +6996,44 @@
                 levelItems.forEach((item, index) => {
                     levelHtml += `
                         <tr>
-                            <td>${index + 1}</td>
-                            <td style="font-weight: bold; color: #FFD700;">${item.nickname}</td>
-                            <td>Lv.${item.level}</td>
-                            <td>💎 ${item.gold.toLocaleString()}</td>
+                            <td style="color: #fff;">${index + 1}</td>
+                            <td style="font-weight: bold; color: #FFD700; text-shadow: 0 0 3px #000;">${item.nickname}</td>
+                            <td style="color: #fff;">Lv.${item.level}</td>
+                            <td style="color: #fff;">💎 ${item.gold.toLocaleString()}</td>
                         </tr>
                     `;
                 });
                 const levelBody = document.getElementById('total-level-ranking-body');
-                if (levelBody) levelBody.innerHTML = levelHtml || '<tr><td colspan="4" style="text-align: center;">데이터 없음</td></tr>';
+                if (levelBody) levelBody.innerHTML = levelHtml || '<tr><td colspan="4" style="text-align: center; color: #fff;">데이터 없음</td></tr>';
 
                 // 자산 랭킹 렌더링
                 let goldHtml = '';
                 goldItems.forEach((item, index) => {
                     goldHtml += `
                         <tr>
-                            <td>${index + 1}</td>
-                            <td style="font-weight: bold; color: #FFD700;">${item.nickname}</td>
-                            <td>💎 ${item.gold.toLocaleString()}</td>
-                            <td>Lv.${item.level}</td>
+                            <td style="color: #fff;">${index + 1}</td>
+                            <td style="font-weight: bold; color: #FFD700; text-shadow: 0 0 3px #000;">${item.nickname}</td>
+                            <td style="color: #fff;">💎 ${item.gold.toLocaleString()}</td>
+                            <td style="color: #fff;">Lv.${item.level}</td>
                         </tr>
                     `;
                 });
                 const goldBody = document.getElementById('total-gold-ranking-body');
-                if (goldBody) goldBody.innerHTML = goldHtml || '<tr><td colspan="4" style="text-align: center;">데이터 없음</td></tr>';
+                if (goldBody) goldBody.innerHTML = goldHtml || '<tr><td colspan="4" style="text-align: center; color: #fff;">데이터 없음</td></tr>';
             });
         }
 
-        // 뉴스 이력 보기 (디자인 개선)
+        // 뉴스 이력 보기 (디자인 개선 - 가독성 강화)
         function showNewsHistory() {
             gameState.currentManagedSlot = null;
             const contentArea = document.getElementById('content-area');
             contentArea.innerHTML = `
                 <button class="back-button" onclick="showMainMenu()">← 뒤로 가기</button>
-                <div style="margin-bottom: 25px;">
+                <div style="margin-bottom: 25px; background: rgba(0, 0, 0, 0.7); padding: 25px; border-radius: 15px; border: 1px solid rgba(255, 215, 0, 0.3);">
                     <h2 style="font-size: 28px; margin-bottom: 8px; color: #FFD700; text-shadow: 0 2px 4px rgba(0,0,0,0.3);">🗞️ 뉴스 아카이브</h2>
-                    <p style="color: #ddd; font-size: 14px;">지난 5일간의 주요 경제 소식들을 보관합니다.</p>
+                    <p style="color: #eee; font-size: 14px;">지난 5일간의 주요 경제 소식들을 보관합니다.</p>
                 </div>
-                <div id="news-history-list" style="display: flex; flex-direction: column; gap: 15px;"></div>
+                <div id="news-history-list" style="display: flex; flex-direction: column; gap: 15px; background: rgba(0, 0, 0, 0.5); padding: 20px; border-radius: 20px;"></div>
             `;
             
             const list = document.getElementById('news-history-list');
@@ -7034,7 +7055,7 @@
                     const isActive = item.effectiveDay === gameState.day;
                     
                     const isHike = item.effect && item.effect.isPriceHike;
-                    const accentColor = isHike ? '#2ecc71' : '#e74c3c';
+                    const accentColor = isHike ? '#2ecc71' : '#ff4757'; // 더 선명한 빨강
                     
                     let statusBadge = '';
                     if (isUpcoming) {
@@ -7042,22 +7063,22 @@
                     } else if (isActive) {
                         statusBadge = `<span style="background: #27ae60; color: white; padding: 3px 10px; border-radius: 20px; font-size: 11px; font-weight: bold; box-shadow: 0 2px 4px rgba(0,0,0,0.2);">현재 활성</span>`;
                     } else {
-                        statusBadge = `<span style="background: rgba(255,255,255,0.2); color: #aaa; padding: 3px 10px; border-radius: 20px; font-size: 11px; font-weight: bold;">기록됨</span>`;
+                        statusBadge = `<span style="background: rgba(255,255,255,0.2); color: #fff; padding: 3px 10px; border-radius: 20px; font-size: 11px; font-weight: bold;">기록됨</span>`;
                     }
 
                     html += `
-                        <div style="background: rgba(20, 20, 20, 0.4); padding: 20px; border-radius: 15px; border-left: 6px solid ${accentColor}; position: relative; overflow: hidden; backdrop-filter: blur(10px); box-shadow: 0 4px 15px rgba(0,0,0,0.1); border: 1px solid rgba(255,255,255,0.05);">
+                        <div style="background: rgba(10, 10, 10, 0.85); padding: 20px; border-radius: 15px; border-left: 6px solid ${accentColor}; position: relative; overflow: hidden; backdrop-filter: blur(10px); box-shadow: 0 8px 25px rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.1);">
                             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
-                                <span style="font-size: 12px; color: #888; font-weight: bold; letter-spacing: 1px;">DAY ${item.day} EDITION</span>
+                                <span style="font-size: 12px; color: #aaa; font-weight: bold; letter-spacing: 1px;">DAY ${item.day} EDITION</span>
                                 ${statusBadge}
                             </div>
-                            <h3 style="margin: 0 0 10px 0; color: #fff; font-size: 18px; line-height: 1.4;">${item.title}</h3>
-                            <p style="font-size: 14px; color: #ccc; line-height: 1.6; margin-bottom: 12px; font-family: 'Courier New', serif;">"${item.content}"</p>
+                            <h3 style="margin: 0 0 10px 0; color: #FFD700; font-size: 18px; line-height: 1.4; text-shadow: 0 1px 2px rgba(0,0,0,0.5);">${item.title}</h3>
+                            <p style="font-size: 14px; color: #fff; line-height: 1.6; margin-bottom: 12px; font-family: 'Courier New', serif; text-shadow: 0 1px 1px rgba(0,0,0,0.5);">"${item.content}"</p>
                             <div style="display: flex; justify-content: space-between; align-items: center; padding-top: 10px; border-top: 1px solid rgba(255,255,255,0.1);">
-                                <span style="color: ${accentColor}; font-size: 13px; font-weight: bold;">
+                                <span style="color: ${accentColor}; font-size: 13px; font-weight: bold; text-shadow: 0 1px 2px rgba(0,0,0,0.3);">
                                     ${isHike ? '📈 시장 가치 상승' : '📉 가치 하락'}
                                 </span>
-                                <small style="color: #666; font-size: 11px;">적용일: Day ${item.effectiveDay}</small>
+                                <small style="color: #888; font-size: 11px;">적용일: Day ${item.effectiveDay}</small>
                             </div>
                         </div>
                     `;
